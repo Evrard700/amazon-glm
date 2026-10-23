@@ -63,3 +63,5 @@ server.log
 /tests/
 # Identifiants du warmup (locaux uniquement)
 /scripts/warmup.creds
+# Images collées dans le chat (artefacts sandbox, pas du code projet)
+/upload/
