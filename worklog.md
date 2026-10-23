@@ -680,3 +680,21 @@ Stage Summary:
 - Build Vercel débloqué de bout en bout : le même pipeline que Vercel passe désormais en local (EXIT 0).
 - Bonus : PATCH marketing (coupons, BXGY, upsells, campagnes) réparé dans l'application elle-même.
 - .gitignore : /upload/ ajouté (images collées au chat) ; PUSH à venir → Vercel redéploiera automatiquement depuis main.
+
+---
+Task ID: 19
+Agent: Z.ai Code (orchestrateur)
+Task: Build Vercel 0417134 en échec (relance utilisateur) — reproduction exacte, correctif force-dynamic, premier déploiement production RÉUSSI
+
+Work Log:
+- Journal utilisateur encore tronqué (fin de l'installation) → reproduction exacte en local : clone GitHub de 0417134 dans /tmp/vercel-test (même méthode que Vercel), bun 1.3.14 identique à Vercel ; serveur dev arrêté VOLONTAIREMENT pour libérer 2,2 Go (leçon de la Task 18), .env sauvegardé au préalable (/tmp/env-backup.copy).
+- Build SANS variables d'environnement → ERREUR REPRODUITE : pré-rendu de /account/downloads ; layout storefront interroge la base (getCategories/getSettings pour l'en-tête) → PrismaClientInitializationError « the URL must start with the protocol postgresql:// » ; cause racine : getSessionUser() avale l'erreur cookies() au build → 11 pages storefront + toutes les pages admin restaient pré-rendables → DATABASE_URL exigée au build (absente/cassée côté Vercel).
+- CORRECTIF : export const dynamic = "force-dynamic" sur (storefront)/layout.tsx ET admin/(protected)/layout.tsx → toute la boutique + la console admin sont rendues à la demande ; il ne reste que /_not-found et /admin/login en statique (zéro accès DB au build, prouvé par le build).
+- VALIDATIONS : build clone SANS env = EXIT 0, toutes routes ƒ (Dynamic) ; eslint sur les 2 fichiers = 0 erreur ; serveur dev relancé via watchdog (HTTP 200 en 0,18 s), .env intact, /api/cart 200 en warmup (Supabase joignable).
+- Commit 8d36575 poussé (PAT toujours actif, non révoqué) → statuts GitHub : 0417134 = failure, **8d36575 = « Vercel => success »** → PREMIER DÉPLOIEMENT PRODUCTION RÉUSSI : vercel.com/evrard-s-projects/amazon-glm/4cfxkpnLcVdbhosCU6QEwBeZm4aj
+- DÉCOUVERTE parallèle : les 2 domaines du projet redirigent vers vercel.com/sso-api (set-cookie _vercel_sso_nonce) → « Vercel Authentication » (Deployment Protection) ACTIVÉE → le site est derrière un mur de connexion Vercel ; procédure de désactivation + vérification env vars (DATABASE_URL/SESSION_SECRET/NEXT_PUBLIC_SITE_URL) + Redeploy transmise à l'utilisateur clic par clic.
+
+Stage Summary:
+- Build Vercel VERT et déployment production en ligne (première fois) — le site n'a plus AUCUNE dépendance DB au build.
+- Reste côté utilisateur (tableau de bord uniquement) : désactiver Vercel Authentication (site public), vérifier/ajouter les 3 variables puis Redeploy, et RÉVOQUER le PAT (toujours valide à ce jour).
+
