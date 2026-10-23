@@ -1,0 +1,754 @@
+// ============================================================
+// Téranga Market — Schéma e-commerce complet (PostgreSQL / Supabase)
+// NB: champs String validés via Zod (listes dans src/lib/constants.ts),
+// pas de type Json natif → colonnes String suffixées "Json"
+// contenant du JSON.stringify() (héritage compatible multi-provider).
+// Tous les montants sont des ENTIERS en FCFA (XOF, pas de centimes).
+// ============================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ============ UTILISATEURS / ACCÈS / CRM ============
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  passwordHash  String
+  name          String
+  phone         String?
+  role          String    @default("CUSTOMER") // OWNER|ADMIN|MANAGER|MARKETING|STAFF|CUSTOMER
+  isActive      Boolean   @default(true)
+  avatarUrl     String?
+
+  // CRM
+  address       String?
+  city          String?
+  crmTagsJson   String    @default("[]")
+  marketingConsent Boolean @default(false)
+
+  // Parrainage
+  referralCode    String   @unique
+  referredById    String?  // parrain (un client n'a qu'un seul parrain : colonne unique par utilisateur)
+  referralSource  String? // SIGNUP | CHECKOUT
+  referralAppliedAt DateTime?
+  referredBy      User?    @relation("Referrals", fields: [referredById], references: [id], onDelete: SetNull)
+  referrals       User[]   @relation("Referrals")
+
+  storeCredit   Int       @default(0) // portefeuille crédit boutique (FCFA)
+  lastLoginAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  carts               Cart[]
+  orders              Order[]
+  rewards             Reward[]              @relation("RewardBeneficiary")
+  approvedRewards     Reward[]              @relation("RewardApprover")
+  creditTransactions  CreditTransaction[]
+  reviews             Review[]
+  activities          ActivityLog[]
+  notes               CustomerNote[]
+  noteAuthor          CustomerNote[]        @relation("NoteAuthor")
+  downloadGrants      DigitalDownloadGrant[]
+  couponRedemptions   CouponRedemption[]
+  couponTargets       Coupon[]              @relation("CouponTarget")
+  downloadLogs        DownloadLog[]
+}
+
+model CustomerNote {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  authorId   String
+  author     User     @relation("NoteAuthor", fields: [authorId], references: [id])
+  content    String
+  createdAt  DateTime @default(now())
+}
+
+// ============ PARAMÈTRES BOUTIQUE / THÈME ============
+
+model StoreSettings {
+  id                   Int     @id @default(1)
+  storeName            String  @default("Téranga Market")
+  tagline              String  @default("Le meilleur du shopping en ligne")
+  logoUrl              String?
+  faviconUrl           String?
+  primaryColor         String  @default("#18181b")
+  accentColor          String  @default("#f59e0b")
+  fontFamily           String  @default("inter")
+  radius               Int     @default(12)
+  announcementText     String?
+  announcementActive   Boolean @default(true)
+  contactEmail         String?
+  contactPhone         String?
+  addressLine          String?
+  whatsappNumber       String?
+  facebookUrl          String?
+  instagramUrl         String?
+  footerAbout          String?
+  metaTitle            String?
+  metaDescription      String?
+  currencyCode         String  @default("XOF")
+  freeShippingThreshold Int    @default(50000)
+  lowStockThreshold    Int     @default(5)
+  guestCheckoutEnabled Boolean @default(true)
+  reviewsAutoApprove   Boolean @default(false)
+  storeOpen           Boolean @default(true)
+  updatedAt           DateTime @updatedAt
+}
+
+// ============ CATALOGUE ============
+
+model Category {
+  id          String     @id @default(cuid())
+  name        String
+  slug        String     @unique
+  description String?
+  imageUrl    String?
+  parentId    String?
+  parent      Category?  @relation("CategoryTree", fields: [parentId], references: [id], onDelete: SetNull)
+  children    Category[] @relation("CategoryTree")
+  position    Int        @default(0)
+  isActive    Boolean    @default(true)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  products ProductCategory[]
+}
+
+model Collection {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  description String?
+  imageUrl    String?
+  isFeatured  Boolean  @default(false)
+  position    Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  products ProductCollection[]
+}
+
+model Product {
+  id               String   @id @default(cuid())
+  name             String
+  slug             String   @unique
+  shortDescription String?
+  description      String
+  type             String   @default("PHYSICAL") // PHYSICAL | DIGITAL | HYBRID
+  status           String   @default("DRAFT")   // DRAFT | ACTIVE | ARCHIVED
+  price            Int      // FCFA entier
+  salePrice        Int?     // prix promotionnel optionnel
+  sku              String?
+  barcode          String?
+  stock            Int      @default(0)         // stock partie physique (pour DIGITAL pur = 0/illimité)
+  trackInventory   Boolean  @default(true)
+  imagesJson       String   @default("[]")      // JSON string[] : URLs
+  tagsJson         String   @default("[]")      // JSON string[]
+  attributesJson   String   @default("[]")      // JSON [{name, values:[...]}]
+  relatedIdsJson   String   @default("[]")      // JSON string[] ids produits recommandés
+  requiresShipping Boolean  @default(true)
+  weightGrams      Int?
+  // Partie numérique (DIGITAL/HYBRID)
+  digitalFileUrl   String?  // nom du fichier dans storage/digital/
+  digitalFileName  String?
+  digitalDownloadLimit Int @default(5)
+  // Agrégats
+  ratingAvg        Float    @default(0)
+  ratingCount      Int      @default(0)
+  salesCount       Int      @default(0)
+  viewsCount       Int      @default(0)
+  isFeatured       Boolean  @default(false)
+  deletedAt        DateTime? // corbeille (soft delete)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  variants     ProductVariant[]
+  categories   ProductCategory[]
+  collections  ProductCollection[]
+  cartItems    CartItem[]
+  orderItems   OrderItem[]
+  reviews      Review[]
+}
+
+model ProductVariant {
+  id         String   @id @default(cuid())
+  productId  String
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  name       String   // ex: "Taille M / Noir"
+  optionsJson String  @default("{}") // {"Taille":"M","Couleur":"Noir"}
+  sku        String?
+  price      Int?     // surcharge optionnelle
+  stock      Int      @default(0)
+  imageUrl   String?
+  isActive   Boolean  @default(true)
+  position   Int      @default(0)
+
+  cartItems CartItem[]
+  orderItems OrderItem[]
+}
+
+model ProductCategory {
+  productId  String
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  @@id([productId, categoryId])
+}
+
+model ProductCollection {
+  productId    String
+  product      Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
+  collectionId String
+  collection   Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  @@id([productId, collectionId])
+}
+
+// ============ PANIER ============
+
+model Cart {
+  id             String   @id @default(cuid())
+  sessionToken   String   @unique
+  userId        String?
+  user           User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  status         String   @default("ACTIVE") // ACTIVE | CONVERTED | MERGED
+  couponId       String?
+  referralCodeUsed String?
+  items         CartItem[]
+  convertedOrderId String?
+  lastActivityAt DateTime @default(now())
+  recoveryCouponSentAt DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model CartItem {
+  id        String   @id @default(cuid())
+  cartId    String
+  cart      Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product  @relation(fields: [productId], references: [id])
+  variantId String?
+  variant   ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
+  quantity  Int      @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([cartId, productId, variantId])
+}
+
+// ============ MARKETING : COUPONS / PROMOTIONS BXGY ============
+
+model Coupon {
+  id              String   @id @default(cuid())
+  code            String   @unique
+  type            String    // PERCENT | FIXED | FREE_SHIPPING | FREE_PRODUCT
+  value           Int       @default(0) // % ou montant FCFA
+  description     String?
+  appliesTo       String   @default("ALL") // ALL | PRODUCTS | CATEGORIES
+  productIdsJson  String   @default("[]")
+  categoryIdsJson String   @default("[]")
+  minOrderAmount  Int      @default(0)
+  maxUses         Int?     // null = illimité
+  usedCount       Int      @default(0)
+  perCustomerLimit Int     @default(1) // 0 = illimité par client
+  freeProductId   String?
+  startsAt        DateTime?
+  expiresAt       DateTime?
+  isActive        Boolean  @default(true)
+  createdById     String?
+  // Ciblage client individuel (ex: récompense parrainage)
+  userId          String?  // si défini, réservé à ce client
+  user            User?    @relation("CouponTarget", fields: [userId], references: [id], onDelete: SetNull)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  redemptions CouponRedemption[]
+}
+
+model CouponRedemption {
+  id         String   @id @default(cuid())
+  couponId   String
+  coupon     Coupon   @relation(fields: [couponId], references: [id], onDelete: Cascade)
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  orderId    String
+  order      Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+
+  @@unique([couponId, orderId])
+}
+
+model Promotion {
+  id              String   @id @default(cuid())
+  name            String
+  description     String?
+  ruleType        String   // BUY_X_GET_Y_SAME | BUY_X_GET_PRODUCT_FREE | BUY_X_GET_PRODUCT_DISCOUNT
+  requiredQty     Int      @default(2)
+  rewardQty       Int      @default(1)
+  rewardProductId String?  // pour BUY_X_GET_PRODUCT_*
+  discountPercent Int?     // pour BUY_X_GET_PRODUCT_DISCOUNT
+  appliesTo       String   @default("ALL") // ALL | PRODUCTS | CATEGORIES
+  productIdsJson  String   @default("[]")
+  categoryIdsJson String   @default("[]")
+  minOrderAmount  Int      @default(0)
+  priority        Int      @default(0)
+  combinable      Boolean  @default(true)
+  maxUses         Int?     // global, null = illimité
+  usedCount        Int      @default(0)
+  perCustomerLimit Int     @default(0) // 0 = illimité
+  startsAt        DateTime?
+  endsAt          DateTime?
+  isActive        Boolean  @default(true)
+  badgeLabel       String?  // ex: "2 pour 1"
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+// ============ LIVRAISON ============
+
+model ShippingZone {
+  id            String  @id @default(cuid())
+  name          String
+  citiesJson    String  @default("[]") // JSON string[]
+  baseCost      Int     @default(2000)
+  estimatedDaysMin Int  @default(1)
+  estimatedDaysMax Int  @default(3)
+  position      Int     @default(0)
+  isActive      Boolean @default(true)
+}
+
+// ============ PAIEMENT ============
+
+model PaymentMethod {
+  id          String  @id @default(cuid())
+  code        String  @unique // cash_on_delivery | wave | orange_money | mtn_momo | stripe
+  name        String
+  description String?
+  instructions String?
+  isOnline    Boolean @default(false) // true = nécessite un fournisseur configuré
+  isActive    Boolean @default(false)
+  position    Int     @default(0)
+  configJson  String  @default("{}") // clés serveur uniquement (jamais renvoyées au frontend)
+  updatedAt   DateTime @updatedAt
+}
+
+// ============ COMMANDES ============
+
+model Order {
+  id            String   @id @default(cuid())
+  orderNumber   String   @unique // TM-YYMMDD-XXXXXX
+  accessToken   String   @unique // accès invité (URL confirmation)
+  userId        String?
+  user          User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  // Client (snapshot)
+  customerName  String
+  customerEmail String
+  customerPhone String
+  // Livraison
+  address       String
+  city          String
+  shippingZoneId String?
+  shippingZoneName String?
+  shippingCost  Int      @default(0)
+  shippingMethodName String @default("Livraison standard")
+  deliveryNote  String?
+  trackingNumber String?
+
+  // Statuts SÉPARÉS
+  orderStatus   String   @default("PENDING")
+  paymentStatus String   @default("PAYMENT_PENDING")
+
+  // Montants (recalculés serveur uniquement)
+  subtotal        Int    @default(0)
+  couponId        String?
+  couponCode      String?
+  couponDiscount  Int    @default(0)
+  promotionDiscount Int  @default(0)
+  promotionsJson  String @default("[]") // détails appliqués (snapshot)
+  creditUsed      Int    @default(0) // crédit boutique dépensé
+  total           Int    @default(0)
+  amountPaid      Int    @default(0)
+  amountRefunded  Int    @default(0)
+
+  // Paiement
+  paymentMethodId  String?
+  paymentMethodCode String?
+  paymentMethodLabel String?
+
+  // Parrainage (snapshot du parrain du client au moment de la commande)
+  referrerId      String?
+
+  // Upsell
+  upsellParentOrderId String?
+  upsellOfferId   String?
+
+  adminNote       String?
+  paidAt          DateTime?
+  confirmedAt     DateTime?
+  shippedAt       DateTime?
+  deliveredAt     DateTime?
+  cancelledAt     DateTime?
+  cancelledReason String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  items       OrderItem[]
+  events      OrderEvent[]
+  payments    Payment[]
+  refunds     Refund[]
+  couponRedemptions CouponRedemption[]
+  upsellAcceptances UpsellAcceptance[]
+  rewardsSource Reward[] @relation("RewardSourceOrder")
+}
+
+model OrderItem {
+  id           String   @id @default(cuid())
+  orderId      String
+  order        Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId     String
+  product      Product  @relation(fields: [productId], references: [id])
+  variantId     String?
+  variant      ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
+  variantName   String?
+  productName   String   // snapshot
+  productSlug   String   // snapshot
+  sku           String?
+  unitPrice     Int      // prix unitaire payé (snapshot)
+  quantity      Int
+  lineTotal     Int
+  isFreeItem     Boolean @default(false) // ligne offerte par promotion
+  promotionId    String?
+  digitalGranted Boolean @default(false)
+
+  grants       DigitalDownloadGrant[]
+}
+
+model OrderEvent {
+  id        String   @id @default(cuid())
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  type      String   // created | confirmed | payment_confirmed | payment_failed | shipped | delivered | cancelled | refunded | upsell_accepted | note ...
+  message   String
+  actorName String?  // qui a déclenché
+  metadataJson String @default("{}")
+  createdAt DateTime @default(now())
+}
+
+model Payment {
+  id            String   @id @default(cuid())
+  orderId       String
+  order         Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  provider      String   // cash_on_delivery | wave | ...
+  methodLabel   String
+  amount        Int
+  status        String   @default("PAYMENT_PENDING")
+  reference     String?
+  failureReason String?
+  confirmedAt   DateTime?
+  confirmedBy   String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  events PaymentEvent[]
+}
+
+model PaymentEvent {
+  id          String   @id @default(cuid())
+  paymentId   String?
+  payment     Payment? @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+  provider    String
+  eventType   String
+  dedupKey    String   @unique // idempotence webhooks
+  payloadJson String   @default("{}")
+  processed   Boolean  @default(false)
+  processedAt DateTime?
+  error       String?
+  receivedAt  DateTime @default(now())
+}
+
+model Refund {
+  id          String   @id @default(cuid())
+  orderId     String
+  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  amount      Int
+  mode        String   // STORE_CREDIT | MANUAL
+  status      String   @default("PENDING") // PENDING | PROCESSED | CANCELLED
+  reason      String
+  note        String?
+  createdById String?
+  processedAt DateTime?
+  createdAt   DateTime @default(now())
+}
+
+// ============ FICHIERS NUMÉRIQUES ============
+
+model DigitalDownloadGrant {
+  id          String   @id @default(cuid())
+  orderItemId String
+  orderItem   OrderItem @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  limitCount  Int       @default(5)
+  downloadCount Int     @default(0)
+  revoked     Boolean   @default(false)
+  revokedReason String?
+  createdAt   DateTime  @default(now())
+
+  logs DownloadLog[]
+
+  @@unique([orderItemId, userId])
+}
+
+model DownloadLog {
+  id        String   @id @default(cuid())
+  grantId   String
+  grant     DigitalDownloadGrant @relation(fields: [grantId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ip        String?
+  userAgent String?
+  createdAt DateTime @default(now())
+}
+
+// ============ PARRAINAGE / RÉCOMPENSES ============
+
+model ReferralProgram {
+  id                   Int     @id @default(1)
+  name                 String  @default("Programme Parrainage")
+  isActive             Boolean @default(true)
+  commissionType       String  @default("PERCENT") // PERCENT | FIXED
+  commissionValue      Int     @default(5) // % ou FCFA
+  capPerReward         Int?    // plafond par récompense (FCFA)
+  baseCalculation      String  @default("SUBTOTAL") // SUBTOTAL (hors livraison)
+  minOrderAmount       Int     @default(10000)
+  eligibleProductIdsJson String @default("[]") // vide = tous
+  eligibleCategoryIdsJson String @default("[]")
+  maxRewardsPerReferrer Int?   // null = illimité
+  maxReferralsPerReferrer Int?
+  holdPeriodDays       Int     @default(7) // délai avant mise à disposition
+  rewardMode           String  @default("STORE_CREDIT") // STORE_CREDIT | COUPON | MANUAL
+  terms                String?
+  startsAt             DateTime?
+  endsAt               DateTime?
+  updatedAt            DateTime @updatedAt
+}
+
+model FullRefundProgram {
+  id                     Int    @id @default(1)
+  name                    String @default("Remboursement Intégral par Parrainage")
+  isActive               Boolean @default(true)
+  requiredReferrals       Int     @default(5)
+  requiredPaidOrdersPerReferral Int @default(1)
+  minOrderAmountPerReferral Int  @default(15000)
+  eligibleProductIdsJson  String  @default("[]")
+  eligibleCategoryIdsJson String  @default("[]")
+  minSourceOrderAmount    Int     @default(20000) // commande éligible du parrain
+  refundPercent           Int     @default(100)
+  refundCap               Int?    // plafond FCFA
+  maxRewards              Int?    // global
+  holdPeriodDays          Int     @default(7)
+  rewardMode              String  @default("STORE_CREDIT") // STORE_CREDIT | COUPON | MANUAL
+  terms                   String?
+  startsAt                DateTime?
+  endsAt                  DateTime?
+  updatedAt               DateTime @updatedAt
+}
+
+model Reward {
+  id            String   @id @default(cuid())
+  program       String   // COMMISSION | FULL_REFUND
+  programId     Int      // 1 (singleton)
+  beneficiaryId String   // le parrain qui reçoit
+  beneficiary   User     @relation("RewardBeneficiary", fields: [beneficiaryId], references: [id], onDelete: Cascade)
+  sourceOrderId String   // commande déclencheuse (commande du filleul pour COMMISSION, commande du parrain pour FULL_REFUND)
+  sourceOrder   Order    @relation("RewardSourceOrder", fields: [sourceOrderId], references: [id])
+  sourceUserId  String?  // filleul concerné (COMMISSION)
+  amount        Int
+  status        String   @default("REWARD_PENDING")
+  uniqueKey     String   @unique // idempotence absolue
+  ruleSnapshotJson String @default("{}") // règle appliquée à la création
+  reason        String   // explication lisible
+  eligibleAt    DateTime? // = paidAt + délai
+  approvedById  String?
+  approvedBy    User?    @relation("RewardApprover", fields: [approvedById], references: [id], onDelete: SetNull)
+  approvedAt    DateTime?
+  usedAt        DateTime?
+  paidAt        DateTime?
+  cancelledAt   DateTime?
+  cancelledReason String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  creditTransactions CreditTransaction[]
+}
+
+model CreditTransaction {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  amount      Int      // + crédit / - débit
+  type        String   // REWARD | REFUND | ADMIN_ADJUSTMENT | SPEND
+  description String
+  balanceAfter Int
+  orderId     String?
+  rewardId    String?
+  reward      Reward?  @relation(fields: [rewardId], references: [id], onDelete: SetNull)
+  createdById String?
+  createdAt   DateTime @default(now())
+}
+
+// ============ UPSELL ============
+
+model UpsellOffer {
+  id               String   @id @default(cuid())
+  name             String
+  triggerType      String   // PRODUCT | CATEGORY | ORDER_AMOUNT
+  triggerProductIdsJson String @default("[]")
+  triggerCategoryIdsJson String @default("[]")
+  triggerMinAmount Int      @default(0)
+  offerProductId   String
+  specialPrice     Int      // prix spécial FCFA
+  message          String   // argument commercial
+  imageUrl         String?
+  startsAt         DateTime?
+  endsAt           DateTime?
+  isActive         Boolean  @default(true)
+  maxAccepts       Int?     // global
+  acceptedCount    Int      @default(0)
+  showOnThankYou    Boolean @default(true)
+  showInCart       Boolean  @default(false)
+  position         Int      @default(0)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  acceptances UpsellAcceptance[]
+}
+
+model UpsellAcceptance {
+  id                   String   @id @default(cuid())
+  offerId              String
+  offer                UpsellOffer @relation(fields: [offerId], references: [id], onDelete: Cascade)
+  orderId              String   // commande initiale
+  order                Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  complementaryOrderId String?  // commande complémentaire créée
+  userId               String?
+  acceptedPrice        Int      // snapshot
+  createdAt            DateTime @default(now())
+
+  @@unique([offerId, orderId]) // idempotence : pas de double acceptation
+}
+
+// ============ AVIS ============
+
+model Review {
+  id             String   @id @default(cuid())
+  productId      String
+  product        Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  userId         String?
+  user           User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  authorName     String
+  rating         Int      // 1..5
+  title          String?
+  comment        String
+  isVerifiedBuyer Boolean @default(false)
+  status         String   @default("PENDING") // PENDING | APPROVED | REJECTED
+  adminReply     String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([productId, userId])
+}
+
+// ============ PAGES / ÉDITEUR VISUEL ============
+
+model Page {
+  id            String    @id @default(cuid())
+  slug          String    @unique // home | a-propos | offre-...
+  title         String
+  isPublished   Boolean   @default(false)
+  publishedData String?   // JSON {sections:[{id,type,props,hidden}]}
+  draftData     String?
+  publishedAt   DateTime?
+  isSystem      Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  versions PageVersion[]
+}
+
+model PageVersion {
+  id         String   @id @default(cuid())
+  pageId     String
+  page       Page     @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  version    Int
+  label      String?
+  data       String   // JSON snapshot
+  createdById String?
+  createdAt  DateTime @default(now())
+
+  @@unique([pageId, version])
+}
+
+// ============ CAMPAGNES / NEWSLETTER ============
+
+model Campaign {
+  id           String   @id @default(cuid())
+  name         String
+  channel      String   @default("EMAIL") // EMAIL | WHATSAPP
+  subject      String
+  content      String
+  audienceJson String   @default("{}") // {segment:"ALL|CUSTOMERS|SUBSCRIBERS|WITH_CREDIT", minOrders, tag}
+  status       String   @default("DRAFT") // DRAFT | SCHEDULED — aucun envoi réel sans fournisseur configuré
+  scheduledAt  DateTime?
+  note         String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model NewsletterSubscriber {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  source    String?  // footer | section | checkout
+  createdAt DateTime @default(now())
+}
+
+// ============ JOURNAL D'ACTIVITÉ ============
+
+model ActivityLog {
+  id          String   @id @default(cuid())
+  actorId     String?
+  actor       User?    @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  actorName   String
+  actorRole   String?
+  action      String   // product.create | order.confirm_payment | ...
+  entityType  String?
+  entityId    String?
+  detailsJson String   @default("{}")
+  createdAt   DateTime @default(now())
+
+  @@index([createdAt])
+}
+
+// ============ RÔLES & PERMISSIONS ÉDITABLES ============
+
+// Surcharges de la matrice par défaut (src/lib/rbac.ts) définies par le
+// Propriétaire depuis la console (page Rôles & permissions). OWNER = tout,
+// verrouillé ; CUSTOMER = rien. Les rôles sans ligne utilisent les défauts.
+model RoleConfig {
+  key             String   @id // ADMIN | MANAGER | MARKETING | STAFF
+  permissionsJson String   @default("[]") // JSON Permission[] — sous-ensemble valide
+  updatedById     String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}

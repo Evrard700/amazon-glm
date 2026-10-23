@@ -1,0 +1,1386 @@
+# PROMPT MAÎTRE — CRÉATION D'UNE PLATEFORME E-COMMERCE COMPLÈTE AVEC ADMINISTRATION VISUELLE ET MARKETING AVANCÉ
+
+## 1. TON RÔLE
+
+Tu es un ingénieur logiciel senior, architecte SaaS, développeur full-stack, expert en e-commerce, UX/UI, sécurité, marketing automation, gestion des paiements et bases de données.
+
+Ta mission est de construire une véritable plateforme e-commerce professionnelle, complète, sécurisée, responsive et exploitable en production.
+
+Je ne suis pas développeur. Tu dois donc prendre en charge les décisions techniques, expliquer simplement les actions importantes et me permettre de gérer ma boutique sans modifier le code.
+
+**Je ne veux pas uniquement une maquette ou un dashboard avec des boutons non fonctionnels. Je veux une application réelle, connectée à sa base de données, dans laquelle les fonctionnalités annoncées sont effectivement opérationnelles.**
+
+Si tu travailles dans un projet existant, commence par analyser son architecture, ses fichiers, ses tables et ses fonctionnalités avant de modifier quoi que ce soit. Conserve le travail déjà réalisé et évite toute réécriture inutile.
+
+Si le projet est nouveau, initialise une architecture propre et évolutive.
+
+Ne supprime jamais une fonctionnalité existante sans m'en avertir. Ne modifie pas les règles financières ou de paiement sans analyser leurs conséquences.
+
+---
+
+# 2. OBJECTIF GÉNÉRAL
+
+Construire une plateforme e-commerce inspirée de l'expérience utilisateur des meilleures boutiques Shopify, avec deux interfaces principales.
+
+### Interface A — Boutique publique
+
+C'est la boutique visible par les visiteurs et les clients.
+
+Elle doit permettre de :
+
+- découvrir les produits ;
+- consulter les catégories ;
+- rechercher et filtrer les produits ;
+- consulter les fiches produits ;
+- choisir les variantes ;
+- ajouter des produits au panier ;
+- utiliser des coupons ;
+- passer commande ;
+- choisir un moyen de paiement disponible ;
+- consulter les informations de commande ;
+- accéder aux produits numériques achetés ;
+- créer un compte client ;
+- parrainer d'autres clients ;
+- consulter ses récompenses ;
+- publier des avis lorsque cela est autorisé.
+
+### Interface B — Administration
+
+C'est l'espace privé permettant de gérer toute la boutique.
+
+L'administrateur doit pouvoir gérer les produits, les commandes, les clients, les paiements, les promotions, les parrainages, les récompenses, le design, les pages, les utilisateurs et les statistiques.
+
+L'objectif est de proposer une expérience d'administration comparable aux grandes plateformes e-commerce, avec un système de personnalisation visuelle proche du fonctionnement d'Elementor.
+
+**L'administrateur ne doit pas avoir besoin de coder pour modifier le contenu, l'apparence ou les offres commerciales de la boutique.**
+
+---
+
+# 3. ACCÈS À L'ADMINISTRATION
+
+Je veux accéder à l'administration en saisissant directement :
+
+`/admin`
+
+Exemple :
+
+`https://mondomaine.com/admin`
+
+Le fonctionnement doit être similaire à celui de WordPress :
+
+- si l'utilisateur n'est pas connecté, il est redirigé vers une page de connexion ;
+- après une connexion autorisée, il accède au dashboard ;
+- après déconnexion, les pages privées deviennent inaccessibles ;
+- un client ordinaire ne doit pas pouvoir accéder à l'administration ;
+- un utilisateur sans permission ne doit pas pouvoir exécuter une action interdite.
+
+Prévois également une route de connexion dédiée, par exemple `/admin/login`, sans imposer à l'utilisateur de connaître cette route pour accéder à l'administration.
+
+**Important :** la sécurité ne doit jamais dépendre du fait que l'URL `/admin` soit connue ou non. Chaque page, action serveur et API doit vérifier l'identité et les permissions de l'utilisateur.
+
+## Rôles
+
+Prévois au minimum :
+
+- OWNER : propriétaire de la boutique ;
+- ADMIN : administrateur ;
+- MANAGER : responsable d'équipe ou d'activité ;
+- MARKETING : gestionnaire des promotions et campagnes ;
+- STAFF : personnel avec accès limité ;
+- CUSTOMER : client ;
+- VISITOR : visiteur non connecté.
+
+L'OWNER doit pouvoir gérer les rôles et permissions.
+
+Les permissions doivent être configurables, par exemple :
+
+- consulter les commandes ;
+- modifier les commandes ;
+- gérer les produits ;
+- gérer le stock ;
+- gérer les clients ;
+- gérer les promotions ;
+- créer des récompenses ;
+- approuver un remboursement ;
+- gérer les paiements ;
+- modifier le thème ;
+- publier des pages ;
+- consulter les statistiques ;
+- gérer les utilisateurs.
+
+Une permission doit être vérifiée côté serveur, et pas uniquement en masquant un bouton dans l'interface.
+
+---
+
+# 4. DESIGN PROFESSIONNEL INSPIRÉ DE SHOPIFY
+
+Je veux éviter l'apparence générique des sites générés automatiquement par une IA.
+
+La boutique doit avoir une identité visuelle professionnelle, cohérente et travaillée.
+
+Inspire-toi des standards de qualité des thèmes Shopify haut de gamme :
+
+- typographie moderne ;
+- espaces blancs bien maîtrisés ;
+- hiérarchie visuelle claire ;
+- grilles de produits soignées ;
+- cartes élégantes ;
+- boutons travaillés ;
+- menus professionnels ;
+- transitions fluides ;
+- animations discrètes ;
+- effets au survol ;
+- galeries produits agréables ;
+- menus mobiles ergonomiques ;
+- pages produits visuellement convaincantes ;
+- panier et checkout cohérents avec le reste de la boutique.
+
+Utilise une police adaptée, par exemple Inter, Geist ou Manrope, avec une solution de repli fiable.
+
+Prévois :
+
+- animations d'apparition discrètes ;
+- transitions de navigation lorsque cela est pertinent ;
+- animations des boutons ;
+- interactions fluides des menus ;
+- transitions des images produits ;
+- tiroir de panier animé ;
+- retours visuels après les actions ;
+- indicateurs de chargement élégants ;
+- animations respectant la préférence système de réduction des mouvements.
+
+Le résultat doit être professionnel sur smartphone, tablette et ordinateur.
+
+Ne copie pas exactement le code source, les ressources propriétaires ou un thème Shopify commercial protégé. Crée une identité originale en reprenant les bonnes pratiques d'ergonomie et les interactions qui rendent ces boutiques professionnelles.
+
+Le design doit rester cohérent sur toutes les pages, y compris l'administration.
+
+---
+
+# 5. STACK TECHNIQUE
+
+Si le projet est nouveau, utilise de préférence :
+
+- Next.js avec App Router ;
+- React ;
+- TypeScript strict ;
+- Tailwind CSS ;
+- Supabase Auth ;
+- Supabase PostgreSQL ;
+- Supabase Storage ;
+- Row Level Security ;
+- GitHub ;
+- Vercel pour le déploiement.
+
+Utilise des composants réutilisables, une architecture modulaire et une séparation claire entre l'interface, la logique métier et la base de données.
+
+Si un projet existe déjà avec une architecture différente mais saine, analyse-la avant de décider de la remplacer.
+
+Valide les données côté client et côté serveur. Utilise une bibliothèque de validation adaptée, par exemple Zod.
+
+Ne place jamais les secrets, les clés privées ou les clés de service dans le code frontend.
+
+Ne stocke pas les commandes, les paiements, les récompenses ou les règles de promotion uniquement dans le navigateur.
+
+---
+
+# 6. GESTION DES PRODUITS
+
+L'administration doit proposer un véritable module de gestion des produits.
+
+L'administrateur doit pouvoir :
+
+- créer un produit ;
+- modifier un produit ;
+- dupliquer un produit ;
+- publier un produit ;
+- dépublier un produit ;
+- archiver un produit ;
+- supprimer un produit selon les règles de protection ;
+- restaurer un produit supprimé si la corbeille est disponible ;
+- modifier le prix ;
+- définir un prix promotionnel ;
+- ajouter une description ;
+- gérer les images et vidéos ;
+- définir un SKU ;
+- gérer les variantes ;
+- gérer le stock ;
+- associer des catégories ;
+- ajouter des tags ;
+- gérer les attributs ;
+- gérer les produits recommandés ;
+- importer et exporter des produits lorsque cela est possible.
+
+## Trois types de produits obligatoires
+
+### A. Produit physique
+
+Exemples : vêtements, accessoires, appareils électroniques.
+
+Fonctionnalités :
+
+- stock ;
+- SKU ;
+- variantes ;
+- livraison ;
+- suivi de commande ;
+- disponibilité ;
+- gestion des ruptures de stock.
+
+### B. Produit numérique
+
+Exemples : PDF, ebook, formation, fichier téléchargeable ou ressource numérique.
+
+Fonctionnalités :
+
+- téléversement sécurisé ;
+- stockage privé ;
+- gestion des fichiers ;
+- droit d'accès associé à une commande ;
+- téléchargement après confirmation du paiement ;
+- limites de téléchargement configurables ;
+- journal des téléchargements ;
+- révocation des droits lorsque la commande doit être invalidée.
+
+Les fichiers payants ne doivent pas être accessibles par une URL publique permanente.
+
+### C. Produit hybride
+
+Un produit hybride contient une partie physique et une partie numérique.
+
+Exemple : un appareil vendu avec un guide PDF.
+
+Il doit pouvoir gérer simultanément :
+
+- le stock physique ;
+- les frais et règles de livraison ;
+- le fichier numérique ;
+- les droits de téléchargement ;
+- les statuts de commande et de paiement.
+
+Une commande hybride payée à la livraison ne doit pas débloquer automatiquement le fichier numérique avant confirmation du paiement.
+
+---
+
+# 7. CATALOGUE, CATÉGORIES ET RECHERCHE
+
+Prévois :
+
+- catalogue public ;
+- catégories ;
+- collections de produits ;
+- recherche ;
+- filtres par prix, catégorie et attribut ;
+- tri par prix, popularité et nouveauté ;
+- pagination ou chargement progressif ;
+- badges promotionnels ;
+- produits indisponibles ;
+- produits récemment consultés si pertinent ;
+- produits recommandés ;
+- produits similaires.
+
+L'administrateur doit pouvoir modifier les catégories et les collections sans toucher au code.
+
+---
+
+# 8. PANIER ET PROCESSUS DE COMMANDE
+
+Crée un véritable système de panier et de checkout.
+
+Le panier doit permettre :
+
+- ajouter un produit ;
+- supprimer un produit ;
+- modifier les quantités ;
+- choisir une variante ;
+- appliquer un coupon ;
+- consulter les réductions ;
+- calculer la livraison ;
+- consulter le total ;
+- gérer les produits indisponibles ;
+- gérer les quantités supérieures au stock ;
+- recalculer le prix côté serveur ;
+- afficher clairement les erreurs.
+
+Le checkout doit gérer :
+
+- commande avec compte client ;
+- commande invitée si autorisée ;
+- informations client ;
+- téléphone ;
+- adresse ;
+- ville ;
+- zone de livraison ;
+- méthode de livraison ;
+- méthode de paiement ;
+- validation de la commande ;
+- confirmation de commande ;
+- suivi de commande.
+
+Les totaux ne doivent jamais être considérés comme fiables simplement parce qu'ils ont été envoyés par le navigateur. Le serveur doit recalculer le montant à partir des données réelles.
+
+## Séparation obligatoire des statuts
+
+Utilise des statuts distincts pour les commandes et les paiements.
+
+Exemples de statuts de commande :
+
+- PENDING ;
+- CONFIRMED ;
+- PROCESSING ;
+- SHIPPED ;
+- DELIVERED ;
+- CANCELLED ;
+- REFUNDED.
+
+Exemples de statuts de paiement :
+
+- PAYMENT_PENDING ;
+- PAYMENT_PAID ;
+- PAYMENT_FAILED ;
+- PAYMENT_CANCELLED ;
+- PAYMENT_REFUNDED ;
+- PAYMENT_PARTIALLY_REFUNDED.
+
+Créer une commande ne signifie jamais que son paiement a été effectué.
+
+Un paiement n'est confirmé qu'après une vérification fiable : webhook vérifié, confirmation serveur du fournisseur ou action manuelle autorisée et journalisée.
+
+---
+
+# 9. GESTION DES PAIEMENTS ET DE LA LIVRAISON
+
+Prévois une architecture extensible pour plusieurs moyens de paiement.
+
+L'administrateur doit pouvoir :
+
+- activer ou désactiver un moyen de paiement ;
+- définir son environnement ;
+- consulter les transactions ;
+- consulter les références ;
+- voir les erreurs ;
+- consulter les paiements en attente ;
+- enregistrer les confirmations manuelles selon les permissions ;
+- consulter l'historique des événements ;
+- lancer un remboursement lorsque le fournisseur le permet.
+
+Le paiement à la livraison doit pouvoir fonctionner indépendamment des paiements en ligne.
+
+Les fournisseurs en ligne doivent être intégrés à travers des adaptateurs séparés. N'invente jamais une API de fournisseur ni un résultat de paiement.
+
+Si les identifiants d'un fournisseur ne sont pas disponibles, indique clairement que son intégration nécessite une configuration. Ne simule pas un paiement réel et ne présente jamais un test local comme une intégration de production.
+
+Les webhooks doivent être vérifiés, sécurisés et idempotents.
+
+Pour la livraison, prévois :
+
+- zones de livraison ;
+- tarifs ;
+- livraison gratuite ;
+- seuil de gratuité ;
+- délais estimés ;
+- statut de livraison ;
+- historique ;
+- possibilité de modifier les règles depuis l'administration.
+
+---
+
+# 10. ÉDITEUR VISUEL DE LA BOUTIQUE SANS CODE
+
+C'est l'une des fonctionnalités les plus importantes du projet.
+
+Je veux un éditeur visuel de pages inspiré d'Elementor et des outils de personnalisation de Shopify.
+
+L'administrateur doit pouvoir modifier l'apparence de la boutique sans écrire de code.
+
+## Personnalisation générale
+
+Il doit pouvoir modifier :
+
+- logo ;
+- favicon ;
+- couleurs principales ;
+- couleurs secondaires ;
+- arrière-plans ;
+- typographie ;
+- tailles de texte ;
+- boutons ;
+- bordures ;
+- arrondis ;
+- espacements ;
+- header ;
+- footer ;
+- menu ;
+- icônes ;
+- bannières ;
+- images ;
+- textes ;
+- badges ;
+- sections ;
+- ordre des sections.
+
+## Éditeur par glisser-déposer
+
+L'administrateur doit pouvoir :
+
+1. ouvrir l'éditeur ;
+2. sélectionner une page ;
+3. ajouter une section ;
+4. déplacer une section ;
+5. modifier son contenu ;
+6. modifier ses couleurs et son apparence ;
+7. choisir les produits affichés ;
+8. visualiser le résultat ;
+9. enregistrer un brouillon ;
+10. prévisualiser sur mobile et ordinateur ;
+11. publier les modifications ;
+12. revenir à une version antérieure.
+
+Prévois des sections réutilisables :
+
+- bannière principale ;
+- image avec texte ;
+- grille de produits ;
+- collection mise en avant ;
+- catégories ;
+- carrousel ;
+- témoignages ;
+- FAQ ;
+- texte enrichi ;
+- vidéo ;
+- logos de confiance ;
+- bandeau promotionnel ;
+- compte à rebours lorsque nécessaire ;
+- avis clients ;
+- produits recommandés ;
+- inscription marketing.
+
+Chaque section doit avoir ses propres réglages accessibles visuellement.
+
+L'ordre des sections doit pouvoir être modifié par glisser-déposer.
+
+## Architecture de l'éditeur
+
+Ne crée pas un faux éditeur qui modifie seulement un aperçu temporaire.
+
+Les changements doivent être enregistrés dans une structure de données validée et persistante, puis utilisés par le véritable rendu public de la boutique.
+
+Prévois :
+
+- brouillons ;
+- publication ;
+- aperçu ;
+- validation des paramètres ;
+- versionnement ;
+- restauration ;
+- compatibilité mobile ;
+- contrôle des permissions.
+
+Un administrateur doit pouvoir changer la bannière principale, modifier les textes, choisir un nouveau produit à mettre en avant et publier ces changements sans toucher au code source.
+
+---
+
+# 11. OUTIL MARKETING N° 1 — ACHETEZ X, OBTENEZ Y
+
+Créer un moteur de promotions quantitatives configurable depuis l'administration.
+
+L'administrateur doit pouvoir créer des règles comme :
+
+- achetez 2 produits, obtenez 1 produit gratuit ;
+- achetez 3 produits, obtenez une réduction sur le quatrième ;
+- achetez 5 produits, payez-en 4 ;
+- achetez X unités, obtenez Y unités ;
+- achetez un produit spécifique et obtenez un autre produit ;
+- achetez un montant défini et recevez une récompense.
+
+## Configuration
+
+L'administrateur doit pouvoir définir :
+
+- nom ;
+- description ;
+- produits concernés ;
+- catégories concernées ;
+- quantité requise ;
+- quantité offerte ;
+- produit offert ;
+- pourcentage de réduction ;
+- montant fixe de réduction ;
+- date de début ;
+- date de fin ;
+- statut ;
+- nombre maximum d'utilisations ;
+- limite par client ;
+- stock disponible pour les produits offerts ;
+- priorité ;
+- cumul avec d'autres promotions ;
+- conditions d'éligibilité.
+
+## Fonctionnement
+
+La promotion doit être calculée côté serveur.
+
+Elle doit apparaître correctement dans le panier, le checkout, la commande et les rapports.
+
+Le système doit éviter les doublons, les dépassements de limites et les réductions sur des produits non éligibles.
+
+Une promotion expirée ou désactivée ne doit plus s'appliquer.
+
+---
+
+# 12. OUTIL MARKETING N° 2 — PARRAINAGE AVEC COMMISSION FIXE OU EN POURCENTAGE
+
+Chaque client éligible doit pouvoir disposer d'un code de parrainage unique et d'un lien partageable.
+
+Le client peut partager son code avec des amis ou connaissances.
+
+Lorsqu'un nouveau client utilise ce code, le système doit enregistrer l'attribution du parrainage.
+
+## Fonctionnalités client
+
+Prévois une page de parrainage dans le compte client permettant de consulter :
+
+- son code ;
+- son lien ;
+- le nombre de filleuls ;
+- les commandes éligibles ;
+- les récompenses en attente ;
+- les récompenses disponibles ;
+- les récompenses utilisées ;
+- l'historique ;
+- les conditions du programme.
+
+## Configuration administrateur
+
+L'administrateur doit pouvoir choisir :
+
+- activation ou désactivation du programme ;
+- montant fixe de commission ;
+- pourcentage de commission ;
+- base de calcul de la commission ;
+- plafond de commission ;
+- commande minimum ;
+- produits ou catégories éligibles ;
+- période de validité ;
+- délai avant validation ;
+- nombre maximum de récompenses ;
+- nombre maximum de filleuls ;
+- conditions d'éligibilité ;
+- mode de récompense.
+
+Les récompenses peuvent prendre la forme de :
+
+- crédit boutique ;
+- coupon ;
+- commission en attente ;
+- remboursement manuel lorsque cela est autorisé.
+
+## Règles obligatoires
+
+Empêcher :
+
+- l'auto-parrainage ;
+- l'utilisation de son propre code ;
+- les attributions multiples incompatibles ;
+- les récompenses en double ;
+- les commandes fictives ;
+- les récompenses issues de commandes non payées ;
+- la fraude par annulation ou remboursement.
+
+Une récompense ne devient éligible qu'après le respect des conditions du programme et la confirmation du paiement de la commande concernée.
+
+Si une commande source est annulée, remboursée ou reconnue comme frauduleuse, la récompense doit pouvoir être suspendue ou annulée conformément aux règles configurées.
+
+---
+
+# 13. OUTIL MARKETING N° 3 — PARRAINAGE AVEC REMBOURSEMENT INTÉGRAL CONDITIONNEL
+
+Créer un deuxième programme de parrainage distinct du programme à commission.
+
+L'objectif est de permettre à un client de recevoir le remboursement intégral de sa propre commande éligible s'il recommande un nombre défini de clients qui réalisent effectivement des achats admissibles.
+
+Exemple :
+
+Un client achète un produit pour 30 000 FCFA.
+
+L'administrateur configure la règle suivante :
+
+« Si vous recommandez 5 nouveaux clients dont les commandes admissibles sont payées, vous pouvez obtenir le remboursement de votre commande éligible, selon les conditions du programme. »
+
+Cet exemple sert à illustrer le fonctionnement. Tous les montants et le nombre de filleuls doivent être configurables.
+
+## Configuration administrateur
+
+L'administrateur doit pouvoir définir :
+
+- nombre de filleuls requis ;
+- définition d'un filleul valide ;
+- montant minimum de chaque commande ;
+- nombre minimum de commandes payées ;
+- produits éligibles ;
+- catégories éligibles ;
+- commande du parrain éligible ;
+- pourcentage de remboursement ;
+- plafond de remboursement ;
+- montant minimum ;
+- date de début ;
+- date de fin ;
+- limite de récompenses ;
+- délai de validation ;
+- conditions supplémentaires ;
+- activation et désactivation du programme.
+
+Le pourcentage peut atteindre 100 % du montant éligible lorsque les conditions le permettent.
+
+## Modes de remboursement
+
+Prévois plusieurs modes configurables :
+
+- crédit boutique ;
+- coupon d'une valeur équivalente ;
+- remboursement manuel ;
+- remboursement automatique uniquement si le fournisseur de paiement permet réellement cette opération et si toutes les conditions de sécurité sont remplies.
+
+L'administrateur doit pouvoir distinguer clairement un crédit boutique d'un remboursement réel envoyé au client.
+
+## Déclenchement de la récompense
+
+La récompense doit être déclenchée uniquement après :
+
+1. l'attribution correcte des filleuls ;
+2. la vérification de leur unicité ;
+3. la validation de leurs commandes éligibles ;
+4. la confirmation réelle de leurs paiements ;
+5. la vérification du nombre requis de commandes ;
+6. la vérification de la commande du parrain ;
+7. la vérification des plafonds et des règles anti-fraude.
+
+Une commande simplement créée ne compte pas comme une commande payée.
+
+Une commande en attente, échouée ou annulée ne doit pas compter comme une commande qualifiante.
+
+Une commande remboursée doit être traitée selon les règles de réversibilité définies par le programme.
+
+## Protection contre les doublons
+
+Une même commande du parrain ne doit pas générer plusieurs remboursements pour la même campagne.
+
+Chaque récompense doit posséder un identifiant unique, une commande source, une règle de programme et un historique complet.
+
+Les récompenses doivent avoir des statuts explicites, par exemple :
+
+- REWARD_PENDING ;
+- REWARD_APPROVED ;
+- REWARD_AVAILABLE ;
+- REWARD_USED ;
+- REWARD_PAID ;
+- REWARD_CANCELLED.
+
+L'administrateur doit pouvoir vérifier manuellement les récompenses importantes avant leur validation définitive.
+
+---
+
+# 14. OUTIL MARKETING N° 4 — UPSELL ET VENTE INCITATIVE APRÈS COMMANDE
+
+Créer un véritable système d'upsell, notamment sur la page de remerciement après commande.
+
+Après avoir terminé une commande, le client peut se voir proposer une offre complémentaire.
+
+Exemples :
+
+- un produit complémentaire ;
+- une version premium ;
+- un pack plus avantageux ;
+- un accessoire ;
+- un produit à prix spécial ;
+- une offre limitée dans le temps.
+
+## Configuration administrateur
+
+L'administrateur doit pouvoir définir :
+
+- produit déclencheur ;
+- produit proposé ;
+- prix normal ;
+- prix spécial ;
+- réduction ;
+- message commercial ;
+- image ;
+- période ;
+- limites ;
+- conditions d'éligibilité ;
+- emplacement d'affichage ;
+- nombre de propositions ;
+- ciblage par produit, catégorie ou montant de commande.
+
+Prévois également des recommandations sur la fiche produit et dans le panier.
+
+## Page de remerciement
+
+Après une commande, la page doit afficher :
+
+- numéro de commande ;
+- récapitulatif ;
+- statut ;
+- message de confirmation ;
+- offre complémentaire si le client est éligible ;
+- prix ;
+- économie réalisée ;
+- bouton d'acceptation ;
+- bouton de refus ou de fermeture.
+
+## Règles financières obligatoires
+
+Le client doit accepter explicitement l'offre.
+
+Ne débite jamais automatiquement le client pour un produit supplémentaire sans autorisation explicite.
+
+Pour une commande déjà payée, utilise un mécanisme de paiement supplémentaire réellement pris en charge ou crée une commande complémentaire liée à la commande initiale.
+
+Pour le paiement à la livraison, définis une procédure claire permettant de créer une commande complémentaire ou de modifier une commande encore modifiable sans provoquer de doublons.
+
+Le stock, la livraison, les réductions, les paiements et les historiques doivent rester cohérents.
+
+L'acceptation d'un upsell doit être enregistrée et reliée à la commande initiale.
+
+---
+
+# 15. AUTRES OUTILS MARKETING
+
+Prévois un espace marketing central dans l'administration.
+
+Il doit notamment contenir les modules suivants.
+
+## A. Coupons
+
+- codes fixes ;
+- réductions en pourcentage ;
+- réduction fixe ;
+- livraison gratuite ;
+- produit offert ;
+- période de validité ;
+- limites globales ;
+- limites par client ;
+- montant minimum ;
+- produits concernés ;
+- catégories concernées ;
+- clients éligibles ;
+- historique d'utilisation.
+
+## B. Promotions
+
+- promotions automatiques ;
+- périodes de campagne ;
+- règles d'éligibilité ;
+- priorités ;
+- cumul ;
+- statistiques ;
+- activation et désactivation.
+
+## C. Paniers abandonnés
+
+- identification des paniers récupérables ;
+- date de dernière activité ;
+- produits concernés ;
+- montant ;
+- statut ;
+- relance manuelle ou programmée ;
+- coupon de récupération si autorisé ;
+- suivi des commandes récupérées.
+
+Ne déclare pas une vente récupérée sans qu'une commande correspondante ait réellement été créée.
+
+## D. Campagnes marketing
+
+Prévois une architecture permettant de gérer :
+
+- campagnes email ;
+- campagnes WhatsApp ;
+- audiences ;
+- segments ;
+- modèles de messages ;
+- programmation ;
+- historique d'envoi ;
+- erreurs ;
+- statistiques.
+
+Les envois automatiques doivent utiliser une intégration réelle et autorisée. Si aucun fournisseur n'est configuré, le système doit rester en mode brouillon ou préparation, sans prétendre avoir envoyé les messages.
+
+Respecte les consentements et les règles applicables aux communications marketing.
+
+## E. Avis clients
+
+- avis associés aux produits ;
+- note ;
+- commentaire ;
+- modération ;
+- publication ;
+- signalement ;
+- distinction des acheteurs vérifiés ;
+- prévention des doublons.
+
+## F. Pages de vente
+
+Permets de créer des pages marketing dédiées, sans code, en utilisant l'éditeur visuel.
+
+Ces pages doivent pouvoir afficher des produits, des avantages, des offres, des témoignages, une FAQ et des boutons d'achat.
+
+---
+
+# 16. TOUTES LES FONCTIONNALITÉS MARKETING DOIVENT ÊTRE CONNECTÉES AUX COMMANDES
+
+C'est une exigence centrale.
+
+Les promotions, coupons, parrainages, remboursements conditionnels et upsells doivent partager une logique métier cohérente.
+
+Ils ne doivent pas fonctionner comme des outils indépendants qui affichent simplement des informations dans le dashboard.
+
+Prévois un système d'événements métier et de traitement sécurisé.
+
+Événements possibles :
+
+- commande créée ;
+- commande confirmée ;
+- paiement confirmé ;
+- paiement échoué ;
+- commande annulée ;
+- commande livrée ;
+- commande remboursée ;
+- coupon utilisé ;
+- parrainage attribué ;
+- commande de filleul validée ;
+- récompense calculée ;
+- récompense approuvée ;
+- récompense annulée ;
+- upsell accepté.
+
+Chaque événement doit être associé aux identifiants pertinents de la commande, du client, du programme et de la récompense.
+
+Les traitements doivent être idempotents : un même événement reçu plusieurs fois ne doit pas créer plusieurs paiements, commandes ou récompenses.
+
+Toutes les opérations financières doivent être journalisées.
+
+Le système doit permettre de répondre précisément à ces questions :
+
+- Pourquoi cette récompense a-t-elle été accordée ?
+- Quelle commande l'a déclenchée ?
+- Quel client a été parrainé ?
+- Le paiement a-t-il été confirmé ?
+- Quel montant a été calculé ?
+- Quelle règle était active ?
+- La récompense a-t-elle été utilisée ?
+- A-t-elle été annulée ?
+- Qui a effectué une éventuelle validation manuelle ?
+
+---
+
+# 17. DASHBOARD ADMINISTRATEUR
+
+Créer un dashboard moderne et responsive avec les principaux indicateurs :
+
+- chiffre d'affaires ;
+- commandes ;
+- panier moyen ;
+- ventes par période ;
+- commandes en attente ;
+- paiements en attente ;
+- produits les plus vendus ;
+- produits en rupture ;
+- nouveaux clients ;
+- clients récurrents ;
+- coupons utilisés ;
+- promotions actives ;
+- ventes attribuées au parrainage ;
+- commissions ;
+- remboursements ;
+- récompenses en attente ;
+- upsells acceptés ;
+- paniers abandonnés ;
+- taux de conversion lorsque les données permettent réellement de le calculer.
+
+Prévois les périodes :
+
+- aujourd'hui ;
+- hier ;
+- 7 jours ;
+- 30 jours ;
+- 3 mois ;
+- 12 mois ;
+- période personnalisée.
+
+Les statistiques doivent être calculées à partir des données réelles. Ne mélange pas les commandes de test avec les ventes réelles dans les rapports de production.
+
+---
+
+# 18. CRM ET GESTION DES CLIENTS
+
+L'administrateur doit pouvoir consulter une fiche détaillée pour chaque client.
+
+Afficher notamment :
+
+- nom ;
+- email ;
+- téléphone ;
+- adresse ;
+- date d'inscription ;
+- commandes ;
+- total dépensé ;
+- nombre de commandes ;
+- coupons utilisés ;
+- historique des paiements ;
+- parrain ;
+- filleuls ;
+- récompenses ;
+- crédits boutique ;
+- avis ;
+- consentements marketing.
+
+Prévois :
+
+- recherche ;
+- filtres ;
+- segments ;
+- historique ;
+- notes internes ;
+- tags ;
+- export autorisé ;
+- gestion des consentements.
+
+Les données sensibles doivent être accessibles uniquement aux utilisateurs autorisés.
+
+---
+
+# 19. BASE DE DONNÉES ET MODÈLE MÉTIER
+
+Conçois une base de données relationnelle structurée.
+
+Les entités doivent couvrir, selon les besoins réels du projet :
+
+- profils utilisateurs ;
+- rôles ;
+- permissions ;
+- paramètres boutique ;
+- thèmes ;
+- pages ;
+- sections de page ;
+- produits ;
+- variantes ;
+- catégories ;
+- collections ;
+- inventaire ;
+- fichiers numériques ;
+- clients ;
+- paniers ;
+- commandes ;
+- lignes de commande ;
+- paiements ;
+- événements de paiement ;
+- remboursements ;
+- coupons ;
+- promotions ;
+- règles promotionnelles ;
+- programmes de parrainage ;
+- attributions de parrainage ;
+- récompenses ;
+- transactions de crédit boutique ;
+- offres d'upsell ;
+- commandes complémentaires ;
+- campagnes marketing ;
+- paniers abandonnés ;
+- avis ;
+- zones de livraison ;
+- journaux d'activité.
+
+Ne crée pas de tables inutiles simplement pour suivre une liste théorique. Définis les relations nécessaires, les contraintes, les index, les clés étrangères et les règles de suppression.
+
+Utilise des migrations versionnées.
+
+Configure Row Level Security lorsque Supabase est utilisé.
+
+Les accès critiques doivent être validés côté serveur.
+
+Les fonctions qui manipulent des montants, des stocks, des récompenses ou des paiements doivent effectuer leurs opérations de manière transactionnelle lorsque nécessaire.
+
+---
+
+# 20. MONNAIE ET CALCULS FINANCIERS
+
+La monnaie principale de la boutique est le franc CFA BCEAO.
+
+- Code ISO : XOF.
+- Affichage : FCFA.
+- Exemple : 15 000 FCFA.
+- Ne jamais afficher `$` pour les prix de la boutique.
+
+Stocke les montants dans une représentation numérique exacte adaptée à XOF. Pour les prix exprimés en francs entiers, privilégie les entiers en base de données et en calcul métier.
+
+N'utilise pas de calculs flottants non contrôlés pour les montants financiers.
+
+Le serveur doit calculer et vérifier :
+
+- prix ;
+- sous-total ;
+- réduction ;
+- livraison ;
+- total ;
+- montant payé ;
+- montant remboursé ;
+- commission ;
+- récompense ;
+- crédit boutique.
+
+Les réductions en pourcentage doivent suivre une règle d'arrondi explicite et cohérente.
+
+Conserve les informations nécessaires pour expliquer les montants appliqués à une commande même si le prix ou la promotion change ultérieurement.
+
+---
+
+# 21. SÉCURITÉ, ANTI-FRAUDE ET PROTECTION DES DONNÉES
+
+Renforce notamment :
+
+- authentification ;
+- autorisations côté serveur ;
+- RLS ;
+- protection des routes privées ;
+- validation des données ;
+- protection contre les accès non autorisés ;
+- rate limiting ;
+- sécurité des sessions ;
+- sécurité des webhooks ;
+- idempotence ;
+- prévention des doubles récompenses ;
+- prévention de l'auto-parrainage ;
+- protection contre les modifications de prix depuis le navigateur ;
+- protection des fichiers numériques ;
+- contrôle des téléchargements ;
+- journalisation des actions sensibles.
+
+Les clés privées et secrets doivent rester côté serveur et dans les variables d'environnement.
+
+N'enregistre pas de secrets dans GitHub, dans les logs ou dans le frontend.
+
+Les actions de confirmation manuelle d'un paiement, d'approbation d'un remboursement ou de modification d'une récompense doivent être réservées aux rôles autorisés.
+
+Les consentements marketing doivent être conservés et respectés.
+
+---
+
+# 22. ROUTES ET ORGANISATION DE L'APPLICATION
+
+Prévois une organisation claire et modulaire.
+
+Exemples de routes publiques :
+
+- `/`
+- `/catalogue`
+- `/categories/[slug]`
+- `/products/[slug]`
+- `/cart`
+- `/checkout`
+- `/order-confirmation/[orderId]`
+- `/account`
+- `/account/orders`
+- `/account/referrals`
+- `/account/rewards`
+- `/pages/[slug]`
+
+Exemples de routes administrateur :
+
+- `/admin`
+- `/admin/products`
+- `/admin/categories`
+- `/admin/collections`
+- `/admin/inventory`
+- `/admin/orders`
+- `/admin/customers`
+- `/admin/marketing`
+- `/admin/marketing/coupons`
+- `/admin/marketing/promotions`
+- `/admin/marketing/buy-x-get-y`
+- `/admin/marketing/referrals`
+- `/admin/marketing/full-refund`
+- `/admin/marketing/upsells`
+- `/admin/marketing/abandoned-carts`
+- `/admin/marketing/campaigns`
+- `/admin/marketing/reviews`
+- `/admin/marketing/landing-pages`
+- `/admin/storefront`
+- `/admin/storefront/pages`
+- `/admin/storefront/themes`
+- `/admin/settings`
+- `/admin/settings/payments`
+- `/admin/settings/shipping`
+- `/admin/users`
+- `/admin/roles`
+- `/admin/analytics`
+- `/admin/activity-logs`
+
+Ces routes sont une base de travail. Adapte-les à l'architecture réelle du projet sans créer de doublons.
+
+La navigation doit être organisée par catégories, claire et responsive.
+
+Les pages doivent afficher de vrais états de chargement, des erreurs compréhensibles, des confirmations et des états vides.
+
+---
+
+# 23. QUALITÉ DE L'APPLICATION
+
+Je ne veux pas que les pages soient remplies de fonctionnalités fictives ou de boutons qui ne font rien.
+
+Pour chaque fonctionnalité, vérifie :
+
+- l'interface ;
+- la validation ;
+- les permissions ;
+- la lecture des données ;
+- l'enregistrement ;
+- la modification ;
+- les erreurs ;
+- les limites ;
+- la cohérence avec les commandes ;
+- la sécurité ;
+- les tests.
+
+Si une intégration externe exige des identifiants que je n'ai pas fournis, construis l'architecture, les paramètres et les états de disponibilité nécessaires. Indique précisément ce qui reste à configurer.
+
+Ne prétends jamais qu'un message a été envoyé, qu'un paiement a été reçu ou qu'un remboursement a été exécuté si l'opération n'a pas réellement été confirmée.
+
+Ne laisse pas silencieusement des modules importants sous la forme « À venir ». Implémente-les ou indique clairement leur blocage technique.
+
+---
+
+# 24. MÉTHODE DE DÉVELOPPEMENT
+
+Procède méthodiquement.
+
+## Étape 1 — Audit
+
+Avant de coder :
+
+- examine le dépôt ;
+- identifie la stack ;
+- analyse la structure ;
+- examine la base de données ;
+- repère les fonctionnalités existantes ;
+- identifie les risques ;
+- vérifie les scripts de tests ;
+- identifie les migrations ;
+- présente les principaux choix techniques.
+
+Si le projet est nouveau, crée une base propre.
+
+Si le projet existe, ne recommence pas tout depuis zéro.
+
+## Étape 2 — Architecture et données
+
+Définis les modules, les relations, les permissions et les migrations nécessaires.
+
+## Étape 3 — Boutique et administration
+
+Développe les interfaces publiques et privées, les composants réutilisables et les formulaires.
+
+## Étape 4 — Logique métier
+
+Implémente les opérations réelles côté serveur pour les produits, les commandes, les paiements, les promotions et les récompenses.
+
+## Étape 5 — Éditeur visuel
+
+Rends l'éditeur de boutique fonctionnel, persistant et connecté au rendu public.
+
+## Étape 6 — Marketing
+
+Implémente les promotions quantitatives, les parrainages, le remboursement conditionnel, les upsells et les autres modules marketing.
+
+## Étape 7 — Tests
+
+Teste les parcours complets, les erreurs, les permissions et les cas limites.
+
+## Étape 8 — Stabilisation
+
+Corrige les erreurs, vérifie les performances et prépare le déploiement.
+
+Tu peux avancer de manière autonome entre les étapes, sans me demander de valider chaque petit changement. En revanche, ne réalise aucune opération destructive ou action réelle de paiement sans autorisation explicite.
+
+---
+
+# 25. TESTS OBLIGATOIRES
+
+Teste au minimum les scénarios suivants.
+
+### Produits
+
+1. Création d'un produit physique.
+2. Création d'un produit numérique.
+3. Création d'un produit hybride.
+4. Modification d'un prix.
+5. Gestion d'une variante.
+6. Stock insuffisant.
+7. Fichier numérique inaccessible avant paiement.
+
+### Commandes et paiements
+
+8. Commande créée mais non payée.
+9. Paiement confirmé.
+10. Paiement échoué.
+11. Commande annulée.
+12. Commande remboursée.
+13. Paiement ou webhook reçu plusieurs fois.
+14. Montant incorrect.
+15. Tentative de modification du prix par le navigateur.
+
+### Promotion « Achetez X, obtenez Y »
+
+16. Quantité insuffisante.
+17. Quantité suffisante.
+18. Stock insuffisant pour le produit offert.
+19. Promotion expirée.
+20. Limite d'utilisation atteinte.
+21. Cumul de promotions interdit.
+
+### Parrainage
+
+22. Code valide.
+23. Code invalide.
+24. Auto-parrainage.
+25. Deux codes concurrents.
+26. Commande du filleul non payée.
+27. Commande du filleul payée.
+28. Commande annulée après attribution.
+29. Récompense déjà générée.
+30. Tentative de fraude.
+
+### Remboursement conditionnel
+
+31. Nombre de filleuls insuffisant.
+32. Nombre de filleuls atteint.
+33. Une commande de filleul est non payée.
+34. Une commande de filleul est remboursée.
+35. Commande du parrain non éligible.
+36. Plafond atteint.
+37. Tentative de remboursement en double.
+38. Annulation ou récupération d'une récompense lorsque nécessaire.
+
+### Upsell
+
+39. Offre affichée sur la page de remerciement.
+40. Offre refusée.
+41. Offre acceptée.
+42. Stock insuffisant.
+43. Paiement complémentaire nécessaire.
+44. Double clic ou répétition de requête.
+45. Commande complémentaire reliée à la commande initiale.
+
+### Administration et éditeur
+
+46. Visiteur tentant d'accéder à `/admin`.
+47. Client tentant d'accéder à une action administrateur.
+48. Administrateur sans permission suffisante.
+49. Modification du logo.
+50. Modification des couleurs.
+51. Ajout d'une section.
+52. Réorganisation par glisser-déposer.
+53. Sauvegarde du brouillon.
+54. Publication.
+55. Restauration d'une version précédente.
+
+---
+
+# 26. COMMANDES DE VALIDATION ET GIT
+
+Selon les outils réellement disponibles dans le projet, exécute les contrôles adaptés :
+
+- tests unitaires ;
+- tests d'intégration ;
+- tests des parcours critiques ;
+- vérification TypeScript ;
+- ESLint ;
+- build de production ;
+- vérification des migrations ;
+- vérification des permissions ;
+- `git diff --check`.
+
+Corrige les erreurs introduites par tes modifications.
+
+Ne masque pas une erreur TypeScript ou ESLint pour faire croire que le projet est propre.
+
+Ne modifie pas les diagnostics ou tests existants simplement pour les faire passer artificiellement.
+
+Conserve les modifications préexistantes qui ne sont pas liées à ta tâche.
+
+Si Git est disponible, crée des commits cohérents et explicites lorsque le travail est stable, sans inclure de secrets ni de changements sans rapport.
+
+Ne déploie pas en production sans autorisation explicite.
+
+---
+
+# 27. LIVRABLE FINAL
+
+À la fin du travail, présente un bilan clair avec les rubriques suivantes.
+
+### A. Fonctionnalités réellement opérationnelles
+
+Distingue ce qui est implémenté, testé et connecté à la base de données.
+
+### B. Fonctionnalités partiellement opérationnelles
+
+Explique ce qui fonctionne et ce qui reste à terminer.
+
+### C. Intégrations externes
+
+Indique les fournisseurs qui fonctionnent réellement et ceux qui nécessitent des identifiants ou une configuration.
+
+### D. Sécurité
+
+Résume les protections mises en place et les risques restants.
+
+### E. Tests
+
+Indique les tests exécutés, leurs résultats et les erreurs restantes.
+
+### F. Base de données
+
+Liste les migrations créées et précise lesquelles ont été appliquées.
+
+### G. Utilisation
+
+Explique simplement comment ouvrir la boutique, accéder à `/admin`, se connecter et utiliser l'éditeur visuel.
+
+### H. Git et déploiement
+
+Indique les commits créés, l'état du build et les actions nécessaires avant production.
+
+### I. Fonctionnalités marketing
+
+Pour chaque module, précise s'il est :
+
+- implémenté ;
+- connecté aux commandes ;
+- configurable par l'administrateur ;
+- testé ;
+- prêt pour la production ;
+- bloqué par une intégration externe.
+
+---
+
+# 28. RÈGLES FINALES NON NÉGOCIABLES
+
+1. Ne construis pas seulement une maquette : implémente la logique réelle.
+2. Ne laisse pas de boutons importants sans action.
+3. Ne simule jamais un paiement réel.
+4. Ne déclenche jamais de récompense uniquement parce qu'une commande existe.
+5. Ne confonds jamais commande créée et paiement confirmé.
+6. Ne débloque pas un fichier numérique avant le paiement confirmé.
+7. Ne permets jamais de double récompense pour une même opération.
+8. Ne permets jamais à un client ordinaire d'accéder aux actions administrateur.
+9. Ne stocke jamais les secrets dans le frontend.
+10. Ne fais jamais confiance aux prix ou aux totaux envoyés par le navigateur.
+11. Ne crée pas un éditeur visuel dont les changements ne sont pas réellement sauvegardés.
+12. Ne modifie pas ou ne supprime pas des fonctionnalités existantes sans analyser les impacts.
+13. N'active pas une intégration de production sans configuration et autorisation.
+14. Ne déploie pas en production sans validation explicite.
+15. Explique les décisions importantes en français simple.
+
+**OBJECTIF FINAL :** livrer une véritable boutique e-commerce professionnelle, avec une interface publique haut de gamme, un espace `/admin` sécurisé, un éditeur visuel sans code, la vente de produits physiques, numériques et hybrides, ainsi que des outils marketing entièrement connectés au cycle réel des commandes, des paiements et des récompenses.
+
+Commence maintenant par l'audit du projet et poursuis la réalisation de manière méthodique, sans détruire l'existant et sans prétendre qu'une fonctionnalité est terminée tant qu'elle n'a pas été vérifiée.

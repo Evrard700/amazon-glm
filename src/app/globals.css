@@ -1,0 +1,368 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-brand: var(--brand);
+  --color-brand-foreground: var(--brand-foreground);
+  --color-brand-soft: var(--brand-soft);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+:root {
+  --radius: 0.75rem;
+  /* Identité Téranga Market : charcoal + ambre chaud (pas de bleu/indigo) */
+  --background: oklch(0.995 0.001 90);
+  --foreground: oklch(0.19 0.01 80);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.19 0.01 80);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.19 0.01 80);
+  --primary: oklch(0.21 0.01 80);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.96 0.004 90);
+  --secondary-foreground: oklch(0.24 0.01 80);
+  --muted: oklch(0.96 0.004 90);
+  --muted-foreground: oklch(0.52 0.01 80);
+  --accent: oklch(0.96 0.02 80);
+  --accent-foreground: oklch(0.24 0.01 80);
+  --destructive: oklch(0.58 0.22 20);
+  --destructive-foreground: oklch(0.985 0 0);
+  --border: oklch(0.9 0.005 90);
+  --input: oklch(0.9 0.005 90);
+  --ring: oklch(0.7 0.14 60);
+  --chart-1: oklch(0.72 0.16 60);
+  --chart-2: oklch(0.6 0.1 40);
+  --chart-3: oklch(0.75 0.1 140);
+  --chart-4: oklch(0.55 0.08 250);
+  --chart-5: oklch(0.6 0.15 300);
+  --sidebar: oklch(0.985 0.002 90);
+  --sidebar-foreground: oklch(0.19 0.01 80);
+  --sidebar-primary: oklch(0.21 0.01 80);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.95 0.01 80);
+  --sidebar-accent-foreground: oklch(0.24 0.01 80);
+  --sidebar-border: oklch(0.9 0.005 90);
+  --sidebar-ring: oklch(0.7 0.14 60);
+  /* Marque : ambre Téranga (CTA, prix promo, badges) */
+  --brand: oklch(0.78 0.16 70);
+  --brand-foreground: oklch(0.22 0.05 60);
+  --brand-soft: oklch(0.97 0.03 80);
+}
+
+.dark {
+  --background: oklch(0.16 0.01 80);
+  --foreground: oklch(0.97 0.004 90);
+  --card: oklch(0.2 0.01 80);
+  --card-foreground: oklch(0.97 0.004 90);
+  --popover: oklch(0.2 0.01 80);
+  --popover-foreground: oklch(0.97 0.004 90);
+  --primary: oklch(0.92 0.01 90);
+  --primary-foreground: oklch(0.19 0.01 80);
+  --secondary: oklch(0.26 0.01 80);
+  --secondary-foreground: oklch(0.97 0.004 90);
+  --muted: oklch(0.26 0.01 80);
+  --muted-foreground: oklch(0.7 0.01 80);
+  --accent: oklch(0.3 0.02 80);
+  --accent-foreground: oklch(0.97 0.004 90);
+  --destructive: oklch(0.65 0.2 20);
+  --destructive-foreground: oklch(0.97 0 0);
+  --border: oklch(0.3 0.01 80);
+  --input: oklch(0.3 0.01 80);
+  --ring: oklch(0.75 0.14 60);
+  --sidebar: oklch(0.2 0.01 80);
+  --sidebar-foreground: oklch(0.97 0.004 90);
+  --sidebar-primary: oklch(0.92 0.01 90);
+  --sidebar-primary-foreground: oklch(0.19 0.01 80);
+  --sidebar-accent: oklch(0.3 0.02 80);
+  --sidebar-accent-foreground: oklch(0.97 0.004 90);
+  --sidebar-border: oklch(0.3 0.01 80);
+  --sidebar-ring: oklch(0.75 0.14 60);
+  --brand: oklch(0.8 0.15 70);
+  --brand-foreground: oklch(0.2 0.05 60);
+  --brand-soft: oklch(0.28 0.05 70);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+  ::selection {
+    @apply bg-brand/40;
+  }
+}
+
+/* Scrollbar soignée pour listes longues */
+.scrollbar-thin::-webkit-scrollbar,
+.scrollbar-slim::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: oklch(0.85 0.01 80);
+  border-radius: 9999px;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: oklch(0.7 0.01 80);
+}
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Respect strict de la préférence système de réduction des mouvements */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ============================================================
+   ÉDITEUR VISUEL « ÉDITION DIRECTE » (canvas inline)
+   Overlays façon Elementor : survols, zones cliquables, drop
+   d'images, chips de listes — scopés à .tm-inline-root.
+   ============================================================ */
+.tm-inline-root {
+  --tm-outline: oklch(0.75 0.16 70);
+  --tm-outline-soft: oklch(0.75 0.16 70 / 0.45);
+}
+
+/* Contour de section au survol + sélection */
+.tm-inline-section {
+  outline: 2px solid transparent;
+  outline-offset: -2px;
+  transition: outline-color 120ms ease, opacity 150ms ease;
+}
+.tm-inline-section:hover {
+  outline-color: var(--tm-outline-soft);
+}
+.tm-inline-section[data-selected="1"] {
+  outline-color: var(--tm-outline);
+}
+
+/* Barre d'outils flottante de section (haut-gauche) */
+.tm-section-toolbar {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 8px;
+  background: oklch(0.28 0.03 70 / 0.95);
+  padding: 3px 5px;
+  color: #fff;
+  box-shadow: 0 4px 14px rgb(0 0 0 / 0.25);
+  opacity: 0;
+  transform: translateY(-4px);
+  transition: opacity 120ms ease, transform 120ms ease;
+  pointer-events: none;
+}
+.tm-inline-section:hover .tm-section-toolbar,
+.tm-inline-section[data-selected="1"] .tm-section-toolbar {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+.tm-section-toolbar .tm-handle {
+  cursor: grab;
+  touch-action: none;
+  border-radius: 5px;
+  padding: 3px;
+  color: #fff;
+  transition: background 100ms ease;
+}
+.tm-section-toolbar .tm-handle:hover {
+  background: rgb(255 255 255 / 0.15);
+}
+.tm-section-toolbar .tm-handle:active {
+  cursor: grabbing;
+}
+.tm-section-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  padding: 0 4px;
+  white-space: nowrap;
+}
+.tm-section-toolbar .tm-tools {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+}
+.tm-section-toolbar .tm-tools button {
+  border-radius: 5px;
+  padding: 4px;
+  color: rgb(255 255 255 / 0.85);
+  transition: background 100ms ease, color 100ms ease;
+}
+.tm-section-toolbar .tm-tools button:hover:not(:disabled) {
+  background: rgb(255 255 255 / 0.15);
+  color: #fff;
+}
+.tm-section-toolbar .tm-tools button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+.tm-section-toolbar .tm-tools .tm-remove:hover {
+  background: oklch(0.6 0.2 25 / 0.9);
+  color: #fff;
+}
+
+/* Zones cliquables : surlignage discret au survol */
+.tm-inline-root [data-tm-field],
+.tm-inline-root [data-tm-item-field] {
+  border-radius: 4px;
+  box-shadow: 0 0 0 0 var(--tm-outline-soft);
+  transition: box-shadow 100ms ease, background 100ms ease;
+  cursor: text;
+}
+.tm-inline-root [data-tm-field]:hover,
+.tm-inline-root [data-tm-item-field]:hover {
+  box-shadow: 0 0 0 2px var(--tm-outline-soft);
+  background: oklch(0.75 0.02 70 / 0.08);
+}
+.tm-inline-root [data-tm-field]:focus-visible,
+.tm-inline-root [data-tm-item-field]:focus-visible {
+  outline: 2px solid var(--tm-outline);
+}
+
+/* Zones image : cadre pointillé + hint au survol */
+.tm-inline-root [data-tm-image] {
+  cursor: pointer;
+  position: relative;
+}
+.tm-inline-root [data-tm-image]:hover {
+  box-shadow: inset 0 0 0 3px var(--tm-outline);
+}
+.tm-inline-root [data-tm-image][data-tm-empty="1"] {
+  background:
+    repeating-linear-gradient(
+      45deg,
+      oklch(0.9 0 0 / 0.6) 0 10px,
+      oklch(0.95 0 0 / 0.6) 10px 20px
+    );
+}
+.tm-image-hint {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 8px;
+  margin: auto;
+  width: fit-content;
+  border-radius: 9999px;
+  background: oklch(0.28 0.03 70 / 0.95);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 10px;
+  opacity: 0;
+  transition: opacity 120ms ease;
+  pointer-events: none;
+}
+.tm-inline-root [data-tm-image]:hover .tm-image-hint {
+  opacity: 1;
+}
+/* Drop en cours : surbrillance */
+.tm-inline-root [data-tm-image].tm-drag-over {
+  box-shadow: inset 0 0 0 4px var(--tm-outline) !important;
+  background-color: oklch(0.75 0.02 70 / 0.15) !important;
+}
+
+/* Chips de gestion des listes (− / +) */
+.tm-list-controls {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 25;
+  opacity: 0;
+  transition: opacity 120ms ease;
+  pointer-events: none;
+}
+.tm-inline-section:hover .tm-list-controls,
+.tm-inline-section[data-selected="1"] .tm-list-controls {
+  opacity: 1;
+  pointer-events: auto;
+}
+.tm-item-remove {
+  height: 24px;
+  width: 24px;
+  border-radius: 9999px;
+  background: oklch(0.28 0.03 70 / 0.92);
+  color: #fff;
+  font-size: 15px;
+  line-height: 1;
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgb(0 0 0 / 0.25);
+  transition: background 100ms ease, transform 100ms ease;
+}
+.tm-item-remove:hover {
+  background: oklch(0.6 0.2 25);
+  transform: scale(1.08);
+}
+/* rang « + Ajouter … » en bas de liste */
+.tm-list-addrow {
+  position: static;
+  display: flex;
+  justify-content: center;
+  padding: 6px 0 10px;
+}
+.tm-item-add {
+  border: 1.5px dashed oklch(0.75 0.02 70 / 0.7);
+  border-radius: 9999px;
+  background: oklch(0.98 0.01 80 / 0.85);
+  color: oklch(0.4 0.05 70);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 6px 16px;
+  transition: all 120ms ease;
+}
+.tm-item-add:hover {
+  border-color: var(--tm-outline);
+  background: oklch(0.93 0.04 70 / 0.9);
+  transform: translateY(1px);
+}

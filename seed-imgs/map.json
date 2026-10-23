@@ -1,0 +1,117 @@
+{
+  "01-smartphone": [
+    "https://z-cdn.chatglm.cn/image-search-mcp/images-ppt/a9d6cadcea9e.jpg",
+    "https://z-cdn.chatglm.cn/image-search-mcp/images-ppt/4127b88c4ba0.jpg",
+    "https://z-cdn.chatglm.cn/image-search-mcp/images-ppt/09c02ea23c95.jpg"
+  ],
+  "02-earbuds": [
+    "https://z-cdn.chatglm.cn/image-search-mcp/images-ppt/49d0d35bbf4e.jpg",
+    "https://z-cdn.chatglm.cn/image-search-mcp/images-ppt/aa89a99f34a5.jpg",
+    "https://z-cdn.chatglm.cn/image-search-mcp/images-ppt/37ad45682c42.jpg"
+  ],
+  "03-dress": [
+    "https://z-cdn.chatglm.cn/image-search-mcp/images-ppt/b584802e1331.jpg",
+    "https://z-cdn.chatglm.cn/image-search-mcp/images-ppt/8f112b28c7b4.jpg",
+    "https://z-cdn.chatglm.cn/image-search-mcp/images-ppt/abfa16bb6c11.jpeg"
+  ],
+  "04-handbag": [
+    "https://z-cdn.chatglm.cn/image-search-mcp/images-ppt/2e26cce65ead.jpg",
+    "https://z-cdn.chatglm.cn/image-search-mcp/images-ppt/dbd7af5eb1c7.jpg",
+    "https://z-cdn.chatglm.cn/image-search-mcp/images-ppt/c35699953dac.jpg"
+  ],
+  "05-smartwatch": [
+    "https://z-cdn.chatglm.cn/image-search-mcp/images-ppt/b7e4514369b6.png",
+    "https://z-cdn.chatglm.cn/image-search-mcp/images-ppt/972d508eb04e.jpg",
+    "https://z-cdn.chatglm.cn/image-search-mcp/images-ppt/cb8ad3a92dc3.jpg"
+  ],
+  "06-coffee": [
+    "https://z-cdn.chatglm.cn/image-search-mcp/images-ppt/d2a48447f2eb.webp",
+    "https://z-cdn.chatglm.cn/image-search-mcp/images-ppt/8f35fc295103.jpg",
+    "https://z-cdn.chatglm.cn/image-search-mcp/images-ppt/3cfe4ce40baf.png"
+  ],
+  "07-blender": [
+    "https://z-cdn.chatglm.cn/image-search-mcp/images-ppt/9268d1284d0b.jpg",
+    "https://z-cdn.chatglm.cn/image-search-mcp/images-ppt/811e72de7418.jpg",
+    "https://z-cdn.chatglm.cn/image-search-mcp/images-ppt/ecf87605833b.jpg"
+  ],
+  "08-perfume": [
+    "https://z-cdn.chatglm.cn/image-search-mcp/images-ppt/d2e21db48e8e.jpg",
+    "https://z-cdn.chatglm.cn/image-search-mcp/images-ppt/3dfc9d962e47.jpeg",
+    "https://z-cdn.chatglm.cn/image-search-mcp/images-ppt/851316b798ea.jpg"
+  ],
+  "09-shea": [
+    "https://z-cdn.chatglm.cn/image-search-mcp/images-ppt/1ea1635198f6.jpg",
+    "https://z-cdn.chatglm.cn/image-search-mcp/images-ppt/34e061ad4931.jpg",
+    "https://z-cdn.chatglm.cn/image-search-mcp/images-ppt/fff163064121.jpg"
+  ],
+  "10-laptop": [
+    "https://z-cdn.chatglm.cn/image-search-mcp/images-ppt/40fc4b779df0.jpg",
+    "https://z-cdn.chatglm.cn/image-search-mcp/images-ppt/60399208e617.jpg",
+    "https://z-cdn.chatglm.cn/image-search-mcp/images-ppt/3b2af0ba3bd5.jpeg"
+  ],
+  "11-sneakers": [
+    "https://z-cdn.chatglm.cn/image-search-mcp/images-ppt/13b7609bfdf3.jpg",
+    "https://z-cdn.chatglm.cn/image-search-mcp/images-ppt/b5baa7795c6f.jpg",
+    "https://z-cdn.chatglm.cn/image-search-mcp/images-ppt/caa559108903.jpg"
+  ],
+  "12-speaker": [
+    "https://z-cdn.chatglm.cn/image-search-mcp/images-ppt/52c38c6d29c3.jpg",
+    "https://z-cdn.chatglm.cn/image-search-mcp/images-ppt/690a327a4297.jpg",
+    "https://z-cdn.chatglm.cn/image-search-mcp/images-ppt/775a3b5c5196.png"
+  ],
+  "13-ebook": [
+    "https://z-cdn.chatglm.cn/image-search-mcp/images-ppt/d947dd3bc9c9.jpg",
+    "https://z-cdn.chatglm.cn/image-search-mcp/images-ppt/c6f5e75d12b6.jpg",
+    "https://z-cdn.chatglm.cn/image-search-mcp/images-ppt/3f1b885d0624.webp"
+  ],
+  "14-course": [
+    "https://z-cdn.chatglm.cn/image-search-mcp/images-ppt/0c6db51f4ba0.jpg",
+    "https://z-cdn.chatglm.cn/image-search-mcp/images-ppt/7481585b784f.jpg",
+    "https://z-cdn.chatglm.cn/image-search-mcp/images-ppt/0f6a65d50006.jpg"
+  ],
+  "15-weather": [
+    "https://z-cdn.chatglm.cn/image-search-mcp/images-ppt/8806a823fb80.jpg",
+    "https://z-cdn.chatglm.cn/image-search-mcp/images-ppt/aec7ddd1863a.png",
+    "https://z-cdn.chatglm.cn/image-search-mcp/images-ppt/9ccc61152729.jpg"
+  ],
+  "16-powerbank": [
+    "https://z-cdn.chatglm.cn/image-search-mcp/images-ppt/b7a72a689b41.jpg",
+    "https://z-cdn.chatglm.cn/image-search-mcp/images-ppt/29bc187c2bb8.png",
+    "https://z-cdn.chatglm.cn/image-search-mcp/images-ppt/bc7ab0750630.jpg"
+  ],
+  "17-sunglasses": [
+    "https://z-cdn.chatglm.cn/image-search-mcp/images-ppt/88bf320cd72d.jpg",
+    "https://z-cdn.chatglm.cn/image-search-mcp/images-ppt/f4ab5013c14c.jpg",
+    "https://z-cdn.chatglm.cn/image-search-mcp/images-ppt/8fb8efa8e735.jpg"
+  ],
+  "18-yoga": [
+    "https://z-cdn.chatglm.cn/image-search-mcp/images-ppt/650db2913e40.jpg",
+    "https://z-cdn.chatglm.cn/image-search-mcp/images-ppt/358efb67ab5a.png",
+    "https://z-cdn.chatglm.cn/image-search-mcp/images-ppt/65744d773d85.jpg"
+  ],
+  "19-deco": [
+    "https://z-cdn.chatglm.cn/image-search-mcp/images-ppt/d31a9eca1564.jpg",
+    "https://z-cdn.chatglm.cn/image-search-mcp/images-ppt/80c726c326ce.jpg",
+    "https://z-cdn.chatglm.cn/image-search-mcp/images-ppt/c253a06cb3bc.jpg"
+  ],
+  "20-hero": [
+    "https://z-cdn.chatglm.cn/image-search-mcp/images-ppt/3b8af0fcd5bf.jpg",
+    "https://z-cdn.chatglm.cn/image-search-mcp/images-ppt/0a5bfd9b4878.jpg",
+    "https://z-cdn.chatglm.cn/image-search-mcp/images-ppt/447e91899a35.jpg"
+  ],
+  "21-solarlamp": [
+    "https://z-cdn.chatglm.cn/image-search-mcp/images-ppt/c05e4d6ccd74.jpg",
+    "https://z-cdn.chatglm.cn/image-search-mcp/images-ppt/43329f8941f5.jpg",
+    "https://z-cdn.chatglm.cn/image-search-mcp/images-ppt/064daeaacfed.jpg"
+  ],
+  "22-tea": [
+    "https://z-cdn.chatglm.cn/image-search-mcp/images-ppt/032d0e8086f9.jpg",
+    "https://z-cdn.chatglm.cn/image-search-mcp/images-ppt/ce5296c5c311.jpg",
+    "https://z-cdn.chatglm.cn/image-search-mcp/images-ppt/56f8d7af15b1.jpg"
+  ],
+  "23-headphones": [
+    "https://z-cdn.chatglm.cn/image-search-mcp/images-ppt/2281521d5d67.jpg",
+    "https://z-cdn.chatglm.cn/image-search-mcp/images-ppt/1ab12f4f6b2f.jpg",
+    "https://z-cdn.chatglm.cn/image-search-mcp/images-ppt/40493a4cd5d3.jpg"
+  ]
+}
