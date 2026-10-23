@@ -661,3 +661,22 @@ Work Log:
 Stage Summary:
 - ✅ CODE EN LIGNE SUR GITHUB : https://github.com/Evrard700/amazon-glm — 5 commits, 359 fichiers, 0 secret, branche main.
 - Actions restantes (utilisateur uniquement) : révoquer le PAT ; import Vercel + env vars ; domaine ; clés paiement.
+
+---
+Task ID: 18
+Agent: Z.ai Code (orchestrateur)
+Task: Build Vercel en échec — diagnostic reproduit en isolation, correctif Zod (.partial() sur schéma raffiné), restoration .env
+
+Work Log:
+- Utilisateur : build Vercel « bun run build exited 1 » (47 s, commit fc14266) ; journal partiel collé (installation OK, erreur non visible).
+- Reproduction EXACTE en isolation : /tmp/vercel-build-test = git archive fc14266 (identique au clone Vercel) + bun install + bun run build avec env vars → ERREUR reproduite : « .partial() cannot be used on object schemas containing refinements » au chargement de /api/admin/marketing/campaigns/[id].
+- CAUSE : 4 schémas marketing (coupon/promotion/upsell/campaign) = z.object().superRefine() → les routes [id] appelaient .partial() sur le schéma raffiné — Zod l'interdit. Bug RÉEL de l'app (PATCH cassé en dev aussi, jamais détecté car jamais chargé hors build prod).
+- CORRECTIF : _lib/schemas.ts restructuré — objet brut (couponObject…) + schéma complet raffiné (xxxSchema) + VARIANTE PATCH (partialXxxSchema = objet.partial().superRefine avec garde de présence sur chaque check croisé). 4 routes [id] mises à jour (import de la variante PATCH). shipping-zones (createSchema sans raffinement) : sain, non touché.
+- VALIDATIONS : bun run lint = 1 warning préexistant (data-table, sans rapport) ; tsc --noEmit = 0 erreur ; build isolé complet (prisma generate + next build + 2 cp, public/ inclus) = EXIT 0 ; PATCH des 4 routes en dev = 401 (module charge sans crash) au lieu de 500.
+- INCIDENT SANDBOX parallèle : les builds isolés (pression mémoire) ont abattu le dev server ET le watchdog ; l'environnement a de surcroît RÉÉCRIT .env (SQLite) → restauré intégralement depuis les valeurs de session (DATABASE_URL/DIRECT_URL/SESSION_SECRET/3 clés Supabase) ; watchdog relancé ; serveur UP en 6 s ; titre storefront OK.
+- package.json : « prisma generate && » ajouté en tête de build (nécessaire Vercel, commit fc14266 déjà poussé).
+
+Stage Summary:
+- Build Vercel débloqué de bout en bout : le même pipeline que Vercel passe désormais en local (EXIT 0).
+- Bonus : PATCH marketing (coupons, BXGY, upsells, campagnes) réparé dans l'application elle-même.
+- .gitignore : /upload/ ajouté (images collées au chat) ; PUSH à venir → Vercel redéploiera automatiquement depuis main.

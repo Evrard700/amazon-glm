@@ -31,8 +31,7 @@ export const SCOPE_TYPES = ["ALL", "PRODUCTS", "CATEGORIES"] as const
 const idList = z.array(z.string().min(1)).max(100)
 
 // ---------- Coupons ----------
-export const couponSchema = z
-  .object({
+const couponObject = z.object({
     code: z
       .string()
       .trim()
@@ -58,7 +57,8 @@ export const couponSchema = z
     isActive: z.boolean().default(true),
     userId: z.string().nullable().optional(),
   })
-  .superRefine((data, ctx) => {
+
+export const couponSchema = couponObject.superRefine((data, ctx) => {
     if (data.type === "PERCENT" && (data.value < 1 || data.value > 100)) {
       ctx.addIssue({
         code: "custom",
@@ -103,9 +103,58 @@ export const couponSchema = z
     }
   })
 
+/**
+ * Variante PATCH (mise à jour partielle) — champs tous optionnels.
+ * ⚠️ `.partial()` doit s'appliquer à l'objet BRUT : Zod interdit
+ * `.partial()` sur un schéma déjà raffiné (.superRefine) — crash au build.
+ */
+export const partialCouponSchema = couponObject.partial().superRefine((data, ctx) => {
+  if (data.type === "PERCENT" && data.value !== undefined && (data.value < 1 || data.value > 100)) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["value"],
+      message: "Un pourcentage doit être compris entre 1 et 100.",
+    })
+  }
+  if (data.type === "FIXED" && data.value !== undefined && data.value <= 0) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["value"],
+      message: "Un montant fixe doit être supérieur à 0 FCFA.",
+    })
+  }
+  if (data.type === "FREE_PRODUCT" && data.freeProductId !== undefined && !data.freeProductId) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["freeProductId"],
+      message: "Choisissez le produit offert pour ce code promo.",
+    })
+  }
+  if (data.appliesTo === "PRODUCTS" && data.productIds !== undefined && data.productIds.length === 0) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["productIds"],
+      message: "Sélectionnez au moins un produit concerné.",
+    })
+  }
+  if (data.appliesTo === "CATEGORIES" && data.categoryIds !== undefined && data.categoryIds.length === 0) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["categoryIds"],
+      message: "Sélectionnez au moins une catégorie concernée.",
+    })
+  }
+  if (data.startsAt && data.expiresAt && data.expiresAt <= data.startsAt) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["expiresAt"],
+      message: "La date de fin doit être postérieure à la date de début.",
+    })
+  }
+})
+
 // ---------- Promotions BXGY ----------
-export const promotionSchema = z
-  .object({
+const promotionObject = z.object({
     name: z.string().trim().min(3, "Nom requis (3 caractères minimum).").max(120),
     description: z.string().trim().max(1000).nullable().optional(),
     ruleType: z.enum(PROMOTION_RULES),
@@ -126,7 +175,8 @@ export const promotionSchema = z
     perCustomerLimit: z.coerce.number().int().min(0, "0 = illimité par client.").max(1000).default(0),
     isActive: z.boolean().default(true),
   })
-  .superRefine((data, ctx) => {
+
+export const promotionSchema = promotionObject.superRefine((data, ctx) => {
     if (
       (data.ruleType === "BUY_X_GET_PRODUCT_FREE" || data.ruleType === "BUY_X_GET_PRODUCT_DISCOUNT") &&
       !data.rewardProductId
@@ -167,9 +217,55 @@ export const promotionSchema = z
     }
   })
 
+/** Variante PATCH — cf. partialCouponSchema. */
+export const partialPromotionSchema = promotionObject.partial().superRefine((data, ctx) => {
+  if (
+    (data.ruleType === "BUY_X_GET_PRODUCT_FREE" || data.ruleType === "BUY_X_GET_PRODUCT_DISCOUNT") &&
+    data.rewardProductId !== undefined &&
+    !data.rewardProductId
+  ) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["rewardProductId"],
+      message: "Choisissez le produit offert / à tarif réduit.",
+    })
+  }
+  if (
+    data.ruleType === "BUY_X_GET_PRODUCT_DISCOUNT" &&
+    data.discountPercent !== undefined &&
+    data.discountPercent === null
+  ) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["discountPercent"],
+      message: "Précisez le pourcentage de réduction sur le produit proposé.",
+    })
+  }
+  if (data.appliesTo === "PRODUCTS" && data.productIds !== undefined && data.productIds.length === 0) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["productIds"],
+      message: "Sélectionnez au moins un produit déclencheur.",
+    })
+  }
+  if (data.appliesTo === "CATEGORIES" && data.categoryIds !== undefined && data.categoryIds.length === 0) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["categoryIds"],
+      message: "Sélectionnez au moins une catégorie déclencheuse.",
+    })
+  }
+  if (data.startsAt && data.endsAt && data.endsAt <= data.startsAt) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["endsAt"],
+      message: "La date de fin doit être postérieure à la date de début.",
+    })
+  }
+})
+
 // ---------- Upsells ----------
-export const upsellSchema = z
-  .object({
+const upsellObject = z.object({
     name: z.string().trim().min(3, "Nom requis (3 caractères minimum).").max(120),
     triggerType: z.enum(UPSALE_TRIGGER_TYPES),
     triggerProductIds: idList.default([]),
@@ -187,7 +283,8 @@ export const upsellSchema = z
     showInCart: z.boolean().default(false),
     position: z.coerce.number().int().min(0).max(999).default(0),
   })
-  .superRefine((data, ctx) => {
+
+export const upsellSchema = upsellObject.superRefine((data, ctx) => {
     if (data.triggerType === "PRODUCT" && data.triggerProductIds.length === 0) {
       ctx.addIssue({
         code: "custom",
@@ -218,9 +315,40 @@ export const upsellSchema = z
     }
   })
 
+/** Variante PATCH — cf. partialCouponSchema. */
+export const partialUpsellSchema = upsellObject.partial().superRefine((data, ctx) => {
+  if (data.triggerType === "PRODUCT" && data.triggerProductIds !== undefined && data.triggerProductIds.length === 0) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["triggerProductIds"],
+      message: "Sélectionnez au moins un produit déclencheur.",
+    })
+  }
+  if (data.triggerType === "CATEGORY" && data.triggerCategoryIds !== undefined && data.triggerCategoryIds.length === 0) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["triggerCategoryIds"],
+      message: "Sélectionnez au moins une catégorie déclencheuse.",
+    })
+  }
+  if (data.triggerType === "ORDER_AMOUNT" && data.triggerMinAmount !== undefined && data.triggerMinAmount <= 0) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["triggerMinAmount"],
+      message: "Précisez le montant de commande déclencheur.",
+    })
+  }
+  if (data.startsAt && data.endsAt && data.endsAt <= data.startsAt) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["endsAt"],
+      message: "La date de fin doit être postérieure à la date de début.",
+    })
+  }
+})
+
 // ---------- Campagnes ----------
-export const campaignSchema = z
-  .object({
+const campaignObject = z.object({
     // Aucun statut DRAFT/SCHEDULED « actif » ici : sans fournisseur d'envoi configuré,
     // une campagne programmée n'enverra JAMAIS de message (bandeau honnête côté UI).
     name: z.string().trim().min(3, "Nom requis (3 caractères minimum).").max(120),
@@ -232,7 +360,8 @@ export const campaignSchema = z
     scheduledAt: optionalDate,
     note: z.string().trim().max(500).nullable().optional(),
   })
-  .superRefine((data, ctx) => {
+
+export const campaignSchema = campaignObject.superRefine((data, ctx) => {
     if (data.minOrders !== null && data.segment !== "CLIENTS_AVEC_COMMANDES") {
       ctx.addIssue({
         code: "custom",
@@ -241,6 +370,22 @@ export const campaignSchema = z
       })
     }
   })
+
+/** Variante PATCH — cf. partialCouponSchema. */
+export const partialCampaignSchema = campaignObject.partial().superRefine((data, ctx) => {
+  if (
+    data.minOrders !== null &&
+    data.minOrders !== undefined &&
+    data.segment !== undefined &&
+    data.segment !== "CLIENTS_AVEC_COMMANDES"
+  ) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["minOrders"],
+      message: "Le nombre minimum de commandes ne s'applique qu'au segment « Clients avec commandes ».",
+    })
+  }
+})
 
 // ---------- Programmes parrainage ----------
 export const referralProgramSchema = z

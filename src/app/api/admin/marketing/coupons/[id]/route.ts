@@ -4,7 +4,7 @@ import { ok, fail, handle, parseBody, ApiError } from "@/lib/api"
 import { requireStaff } from "@/lib/auth"
 import { logActivity } from "@/lib/activity"
 import { invalidateCache } from "@/lib/cache"
-import { couponSchema } from "../../_lib/schemas"
+import { partialCouponSchema } from "../../_lib/schemas"
 
 /**
  * PATCH /api/admin/marketing/coupons/[id] — modification complète (aussi utilisée
@@ -14,7 +14,7 @@ import { couponSchema } from "../../_lib/schemas"
  */
 
 const idSchema = z.string().min(1)
-const partialCoupon = couponSchema.partial()
+const partialCoupon = partialCouponSchema
 
 export async function PATCH(
   request: Request,

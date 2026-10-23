@@ -3,7 +3,7 @@ import { db } from "@/lib/db"
 import { fail, ok, handle, parseBody, ApiError } from "@/lib/api"
 import { requireStaff } from "@/lib/auth"
 import { logActivity } from "@/lib/activity"
-import { campaignSchema } from "../../_lib/schemas"
+import { partialCampaignSchema } from "../../_lib/schemas"
 import { SEGMENT_STORAGE } from "../../_lib/helpers"
 
 /**
@@ -12,7 +12,7 @@ import { SEGMENT_STORAGE } from "../../_lib/helpers"
  */
 
 const idSchema = z.string().min(1)
-const partialCampaign = campaignSchema.partial()
+const partialCampaign = partialCampaignSchema
 
 export async function PATCH(
   request: Request,

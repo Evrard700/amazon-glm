@@ -4,7 +4,7 @@ import { fail, ok, handle, parseBody, ApiError } from "@/lib/api"
 import { requireStaff } from "@/lib/auth"
 import { logActivity } from "@/lib/activity"
 import { invalidateCache } from "@/lib/cache"
-import { promotionSchema } from "../../_lib/schemas"
+import { partialPromotionSchema } from "../../_lib/schemas"
 
 /**
  * PATCH /api/admin/marketing/promotions/[id] — modification complète.
@@ -13,7 +13,7 @@ import { promotionSchema } from "../../_lib/schemas"
  */
 
 const idSchema = z.string().min(1)
-const partialPromotion = promotionSchema.partial()
+const partialPromotion = partialPromotionSchema
 
 export async function PATCH(
   request: Request,

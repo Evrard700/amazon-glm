@@ -3,7 +3,7 @@ import { db } from "@/lib/db"
 import { fail, ok, handle, parseBody, ApiError } from "@/lib/api"
 import { requireStaff } from "@/lib/auth"
 import { logActivity } from "@/lib/activity"
-import { upsellSchema } from "../../_lib/schemas"
+import { partialUpsellSchema } from "../../_lib/schemas"
 
 /**
  * PATCH /api/admin/marketing/upsells/[id] — modification complète.
@@ -13,7 +13,7 @@ import { upsellSchema } from "../../_lib/schemas"
  */
 
 const idSchema = z.string().min(1)
-const partialUpsell = upsellSchema.partial()
+const partialUpsell = partialUpsellSchema
 
 export async function PATCH(
   request: Request,
