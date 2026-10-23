@@ -698,3 +698,21 @@ Stage Summary:
 - Build Vercel VERT et déployment production en ligne (première fois) — le site n'a plus AUCUNE dépendance DB au build.
 - Reste côté utilisateur (tableau de bord uniquement) : désactiver Vercel Authentication (site public), vérifier/ajouter les 3 variables puis Redeploy, et RÉVOQUER le PAT (toujours valide à ce jour).
 
+---
+Task ID: 20
+Agent: Z.ai Code (orchestrateur)
+Task: Erreur 500 en production (retour utilisateur « tout s'est bien déroulé mais erreur 500 ») — diagnostic extérieur, page /api/health, chemin exact de Deployment Protection
+
+Work Log:
+- Tests externes sur les 2 domaines du projet : 4/4 routes (/, /admin/login, /robots.txt, /sitemap.xml) → 302 « Protected by Vercel Authentication » → le mur de protection est TOUJOURS actif ; l'utilisateur (connecté à Vercel dans son navigateur) passe silencieusement, d'où le 500 visible UNIQUEMENT de son côté.
+- « Erreur interne du serveur » introuvable dans src (grep vide) → c'est le « Internal Server Error » de Next.js traduit par le navigateur ; aucun middleware (Glob vide). Conclusion : 500 runtime = layout storefront → base inaccessible → DATABASE_URL absente/mal enregistrée côté Vercel (à confirmer via /api/health).
+- Doc officielle Vercel (mise à jour sept. 2026) consultée : le VRAI chemin de la protection = Projet → Settings (barre latérale) → Deployment Protection — PAS sous « Domains » comme indiqué précédemment (cause probable de l'échec de l'étape utilisateur).
+- NOUVELLE ROUTE /api/health (src/app/api/health/route.ts) : diagnostic public en français — présence/format de DATABASE_URL / SESSION_SECRET / NEXT_PUBLIC_SITE_URL + test réel SELECT 1 avec message d'erreur Prisma exploitable, cache mémoire 30 s, aucun secret révélé, rendu HTML lisible par un non-technicien.
+- Validations : tsc --noEmit 0 erreur, eslint 0 erreur ; incident parallèle : le tsc a abattu dev server + watchdog (pression mémoire) → watchdog relancé, serveur 200 en 0,11 s AVANT le push (priorité : l'utilisateur utilisait le panneau de prévisualisation à cet instant).
+- Commit 35b1589 poussé (PAT actif) → statut GitHub « Vercel => success » en ~3 min → deployment vercel.com/evrard-s-projects/amazon-glm/8Y4ikkSFgfUkZzsMxM3cm7V5HLty
+
+Stage Summary:
+- Diagnostic autoservable en ligne (/api/health) : lira noir sur blanc ce qui manque (variables absentes/mal formées OU connexion DB en échec, message Prisma inclus).
+- Reste utilisateur : (1) recréer DATABASE_URL + SESSION_SECRET (+ NEXT_PUBLIC_SITE_URL) dans Settings → Environment Variables → Redeploy ; (2) ouvrir /api/health ; (3) désactiver la protection dans Settings → Deployment Protection ; (4) prévenir l'assistant → vérification E2E extérieure complète (curable seulement une fois le mur tombé).
+- PAT toujours actif (utilisé pour 35b1589) — à révoquer quand tout est vert.
+
