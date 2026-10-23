@@ -9,6 +9,12 @@ import { redirect } from "next/navigation"
  * La sécurité ne repose JAMAIS sur la confidentialité de l'URL /admin :
  * la session est revalidée côté serveur à chaque requête.
  */
+
+// Pages admin TOUJOURS dynamiques : la session est revalidée à chaque requête
+// (jamais de HTML figé au build — sinon la redirection de connexion et les
+// permissions seraient gravées au moment de la construction).
+export const dynamic = "force-dynamic"
+
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const user = await getSessionUser()
   if (!user) redirect("/admin/login")
