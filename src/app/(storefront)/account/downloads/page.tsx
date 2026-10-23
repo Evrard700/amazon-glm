@@ -19,7 +19,17 @@ export default async function AccountDownloadsPage() {
   const grants = await db.digitalDownloadGrant.findMany({
     where: { userId: user.id },
     orderBy: { createdAt: "desc" },
-    include: { orderItem: { include: { order: true, product: true } } },
+    // Anti-overfetching : select ciblé — seuls les champs affichés par la page
+    // sont chargés (plus d'include profond order + product complets)
+    include: {
+      orderItem: {
+        select: {
+          productName: true,
+          order: { select: { orderNumber: true } },
+          product: { select: { digitalFileName: true } },
+        },
+      },
+    },
   })
 
   return (

@@ -1,6 +1,5 @@
 "use client"
 
-import { motion } from "framer-motion"
 import { Check } from "lucide-react"
 import { OrderStatusBadge, PaymentStatusBadge } from "@/components/storefront/status-badge"
 import { formatXOF } from "@/lib/money"
@@ -22,21 +21,19 @@ export function OrderSuccessHero({
   paymentMethodLabel: string | null
 }) {
   return (
-    <motion.header
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.35 }}
-      className="overflow-hidden rounded-2xl border border-emerald-200 bg-gradient-to-b from-emerald-50 to-card p-6 text-center shadow-sm sm:p-8 dark:border-emerald-900 dark:from-emerald-950/50"
+    // CSS pur : fondu + montée au montage (keyframe slide-up de globals.css),
+    // calque l'ancien motion.header (opacity 0, y 12 → 0.35 s).
+    <header
+      className="overflow-hidden rounded-2xl border border-emerald-200 bg-gradient-to-b from-emerald-50 to-card p-6 text-center shadow-sm animate-[slide-up_0.35s_ease-out] sm:p-8 dark:border-emerald-900 dark:from-emerald-950/50"
     >
-      <motion.span
-        initial={{ scale: 0, rotate: -20 }}
-        animate={{ scale: 1, rotate: 0 }}
-        transition={{ type: "spring", stiffness: 260, damping: 16, delay: 0.1 }}
-        className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500 text-white shadow-lg"
+      {/* Coche : pop avec léger rebond (cubic-bezier overshoot) + délai 0.1 s,
+          calque l'ancien ressort framer (scale 0 / rotation -20° → 1). */}
+      <span
+        className="mx-auto flex h-16 w-16 animate-[pop-in_0.45s_cubic-bezier(0.34,1.56,0.64,1)_0.1s_both] items-center justify-center rounded-full bg-emerald-500 text-white shadow-lg"
         aria-hidden
       >
         <Check className="h-9 w-9" strokeWidth={3} />
-      </motion.span>
+      </span>
       <h1 className="mt-4 text-2xl font-extrabold tracking-tight sm:text-3xl">
         Merci {customerName.split(" ")[0]} ! Votre commande est enregistrée.
       </h1>
@@ -54,6 +51,6 @@ export function OrderSuccessHero({
       {paymentMethodLabel && (
         <p className="text-xs text-muted-foreground">à régler via « {paymentMethodLabel} »</p>
       )}
-    </motion.header>
+    </header>
   )
 }

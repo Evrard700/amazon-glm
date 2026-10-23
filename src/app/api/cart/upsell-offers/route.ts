@@ -45,6 +45,14 @@ export async function GET() {
       : []
     const cartCategoryIds = new Set(links.map((l) => l.categoryId))
 
+    // Préchargement des produits proposés en UNE requête (anti-N+1) :
+    // mêmes filtres que l'ancien findFirst par offre (ACTIVE + non supprimé)
+    const offerProductIds = [...new Set(offers.map((o) => o.offerProductId))]
+    const offerProducts = offerProductIds.length
+      ? await db.product.findMany({ where: { id: { in: offerProductIds }, status: "ACTIVE", deletedAt: null } })
+      : []
+    const productById = new Map(offerProducts.map((p) => [p.id, p]))
+
     const results: {
       offerId: string
       name: string
@@ -69,9 +77,7 @@ export async function GET() {
         if (cartSubtotal < offer.triggerMinAmount) continue
       }
 
-      const product = await db.product.findFirst({
-        where: { id: offer.offerProductId, status: "ACTIVE", deletedAt: null },
-      })
+      const product = productById.get(offer.offerProductId)
       if (!product) continue
       if (product.type !== "DIGITAL" && product.trackInventory && product.stock < 1) continue
       // Produit déjà au panier → on ne le repropose pas

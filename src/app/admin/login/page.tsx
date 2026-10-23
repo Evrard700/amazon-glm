@@ -3,7 +3,6 @@
 import { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { motion } from "framer-motion"
 import { Loader2, Lock, LayoutDashboard } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -43,12 +42,9 @@ export default function AdminLoginPage() {
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-background to-brand-soft/40 px-4">
-      <motion.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
-        className="w-full max-w-md"
-      >
+      {/* CSS pur : fondu + montée au montage (keyframe slide-up de globals.css),
+          calque l'ancien motion.div (opacity 0, y 12 → 0.3 s). */}
+      <div className="w-full max-w-md animate-[slide-up_0.3s_ease-out]">
         <div className="mb-6 flex flex-col items-center gap-2 text-center">
           <Logo className="h-14 w-14" />
           <h1 className="text-2xl font-extrabold tracking-tight">Administration Téranga</h1>
@@ -104,7 +100,7 @@ export default function AdminLoginPage() {
         <p className="mt-6 text-center text-sm text-muted-foreground">
           <Link href="/" className="font-medium hover:underline">← Retour à la boutique</Link>
         </p>
-      </motion.div>
+      </div>
     </div>
   )
 }

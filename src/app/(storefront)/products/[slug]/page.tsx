@@ -12,7 +12,7 @@ import {
   ShieldCheck,
   Truck,
 } from "lucide-react"
-import type { Prisma, Product, Review } from "@prisma/client"
+import type { Prisma, Review } from "@prisma/client"
 import { db } from "@/lib/db"
 import { cached } from "@/lib/cache"
 import { getSessionUser } from "@/lib/auth"
@@ -24,7 +24,7 @@ import { parseJson } from "@/lib/json"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { RatingStars } from "@/components/storefront/rating-stars"
-import { ProductCard } from "@/components/storefront/product-card"
+import { ProductCard, type ProductCardData } from "@/components/storefront/product-card"
 import { toProductCardData } from "@/components/storefront/map-product"
 import { ProductGallery } from "@/components/storefront/product/gallery"
 import { PurchasePanel } from "@/components/storefront/product/purchase-panel"
@@ -41,11 +41,31 @@ type ProductWithRelations = Prisma.ProductGetPayload<{
   include: { variants: true; categories: { include: { category: true } } }
 }>
 
+// Anti-overfetching : champs EXACTS consommés par toProductCardData pour les
+// produits similaires (ni description, ni JSONs inutiles, ni fichiers numériques)
+const RELATED_SELECT = {
+  id: true,
+  name: true,
+  slug: true,
+  price: true,
+  salePrice: true,
+  imagesJson: true,
+  type: true,
+  stock: true,
+  trackInventory: true,
+  ratingAvg: true,
+  ratingCount: true,
+  isFeatured: true,
+} satisfies Prisma.ProductSelect
+
+type RelatedProductRow = Prisma.ProductGetPayload<{ select: typeof RELATED_SELECT }>
+
 interface ProductPagePayload {
   product: ProductWithRelations
   /** Tous les avis APPROVED (ordre createdAt desc) — pagination en mémoire. */
   reviews: Review[]
-  related: Product[]
+  /** Produits similaires déjà mappés en ProductCardData (select ciblé). */
+  related: ProductCardData[]
 }
 
 /**
@@ -75,12 +95,13 @@ function loadProductPage(slug: string): Promise<ProductPagePayload | null> {
       }),
       (async () => {
         const relatedIds = parseJson<string[]>(product.relatedIdsJson, [])
-        let result: Product[] = []
+        let result: RelatedProductRow[] = []
         if (relatedIds.length > 0) {
           result = await db.product.findMany({
             where: { id: { in: relatedIds }, status: "ACTIVE", deletedAt: null, NOT: { id: product.id } },
             take: 4,
             orderBy: { salesCount: "desc" },
+            select: RELATED_SELECT,
           })
         }
         if (result.length === 0) {
@@ -96,9 +117,11 @@ function loadProductPage(slug: string): Promise<ProductPagePayload | null> {
             },
             orderBy: { salesCount: "desc" },
             take: 4,
+            select: RELATED_SELECT,
           })
         }
-        return result
+        // Mapping immédiat : la page ne consomme que des ProductCardData
+        return result.map((p) => toProductCardData(p))
       })(),
     ])
 
@@ -554,7 +577,7 @@ export default async function ProductPage({
           </div>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
             {related.map((p) => (
-              <ProductCard key={p.id} product={toProductCardData(p)} />
+              <ProductCard key={p.id} product={p} />
             ))}
           </div>
         </section>

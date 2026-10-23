@@ -3,7 +3,6 @@
 // Galerie produit — image principale animée + miniatures, zoom léger au survol (desktop).
 import { useState } from "react"
 import Image from "next/image"
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion"
 import { Package, ZoomIn } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -17,7 +16,6 @@ export function ProductGallery({
   badge?: React.ReactNode
 }) {
   const [index, setIndex] = useState(0)
-  const reduce = useReducedMotion()
   const safeIndex = Math.min(index, Math.max(0, images.length - 1))
   const current = images[safeIndex]
 
@@ -26,25 +24,22 @@ export function ProductGallery({
       <div className="group relative aspect-square overflow-hidden rounded-xl border bg-secondary/40 shadow-sm">
         {current ? (
           <>
-            <AnimatePresence mode="popLayout" initial={false}>
-              <motion.div
-                key={safeIndex}
-                initial={reduce ? undefined : { opacity: 0, scale: 1.02 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={reduce ? undefined : { opacity: 0 }}
-                transition={{ duration: 0.25, ease: "easeOut" }}
-                className="absolute inset-0 cursor-zoom-in"
-              >
-                <Image
-                  src={current}
-                  alt={name}
-                  fill
-                  priority
-                  sizes="(max-width: 1024px) 100vw, 50vw"
-                  className="object-cover transition-transform duration-500 group-hover:scale-110"
-                />
-              </motion.div>
-            </AnimatePresence>
+            {/* CSS pur : à chaque changement d'image, la clé remonte le calque et la
+                keyframe fade-in (globals.css) rejoue le fondu 0→1 de 250 ms, comme
+                l'ancien AnimatePresence framer. prefers-reduced-motion = instantané. */}
+            <div
+              key={safeIndex}
+              className="absolute inset-0 animate-[fade-in_0.25s_ease-out] cursor-zoom-in"
+            >
+              <Image
+                src={current}
+                alt={name}
+                fill
+                priority
+                sizes="(max-width: 1024px) 100vw, 50vw"
+                className="object-cover transition-transform duration-500 group-hover:scale-110"
+              />
+            </div>
             <span className="pointer-events-none absolute bottom-3 right-3 hidden items-center gap-1.5 rounded-lg bg-card/90 px-2.5 py-1.5 text-xs font-medium text-muted-foreground opacity-0 shadow-sm backdrop-blur transition-opacity group-hover:opacity-100 sm:inline-flex">
               <ZoomIn className="h-3.5 w-3.5" aria-hidden /> Survoler pour zoomer
             </span>

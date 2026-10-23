@@ -1,10 +1,9 @@
 "use client"
 
 // Section publique COMPTE À REBOURS — client (setInterval), respecte prefers-reduced-motion.
-import { useEffect, useState } from "react"
+import { useEffect, useState, useSyncExternalStore } from "react"
 import Link from "next/link"
 import { ArrowRight } from "lucide-react"
-import { useReducedMotion } from "framer-motion"
 import { Container, str } from "./section-ui"
 
 type Remaining = { days: number; hours: number; minutes: number; seconds: number; over: boolean }
@@ -24,13 +23,28 @@ function computeRemaining(endsAt: Date): Remaining {
 
 const pad = (n: number) => String(n).padStart(2, "0")
 
+/* Remplacement CSS pur de useReducedMotion (framer-motion) : lecture de la media
+   query via useSyncExternalStore — aucun setState synchrone dans un effet, valeur
+   serveur stable (false) donc aucun écart d'hydratation, puis synchronisation
+   automatique côté client dès que la préférence change. */
+const reducedMotionMq =
+  typeof window !== "undefined" ? window.matchMedia("(prefers-reduced-motion: reduce)") : null
+
+function subscribeReducedMotion(onChange: () => void) {
+  reducedMotionMq?.addEventListener("change", onChange)
+  return () => reducedMotionMq?.removeEventListener("change", onChange)
+}
+
+const readReducedMotion = () => reducedMotionMq?.matches ?? false
+const serverReducedMotion = () => false
+
 export function CountdownSection({ props }: { props: Record<string, unknown> }) {
   const title = str(props.title)
   const text = str(props.text)
   const endsAtRaw = str(props.endsAt)
   const ctaLabel = str(props.ctaLabel, "J'en profite")
   const ctaHref = str(props.ctaHref, "/catalogue?filter=promo") || "/catalogue?filter=promo"
-  const reduce = useReducedMotion()
+  const reduce = useSyncExternalStore(subscribeReducedMotion, readReducedMotion, serverReducedMotion)
 
   // Valeur initiale dérivée des props (identique au rendu serveur) ; l'intervalle
   // synchronise ensuite chaque seconde — pas de setState synchrone dans l'effet.

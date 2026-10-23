@@ -599,19 +599,24 @@ export async function confirmPayment(orderId: string, actor: Actor, options?: { 
       return product && (product.type === "DIGITAL" || product.type === "HYBRID") && !!product.digitalFileUrl
     })
     if (digitalItems.length > 0) {
-      if (order.userId) {
-        for (const item of digitalItems) {
-          const product = productById.get(item.productId)!
-          await tx.digitalDownloadGrant.upsert({
-            where: { orderItemId_userId: { orderItemId: item.id, userId: order.userId } },
-            update: {},
-            create: {
-              orderItemId: item.id,
-              userId: order.userId,
-              limitCount: product.digitalDownloadLimit,
-            },
-          })
-        }
+      const userId = order.userId
+      if (userId) {
+        // FLUIDITÉ : upserts idempotents (contrainte unique composite
+        // orderItemId+userId) → UNE salve parallèle au lieu de N séquentiels
+        await Promise.all(
+          digitalItems.map((item) => {
+            const product = productById.get(item.productId)!
+            return tx.digitalDownloadGrant.upsert({
+              where: { orderItemId_userId: { orderItemId: item.id, userId } },
+              update: {},
+              create: {
+                orderItemId: item.id,
+                userId,
+                limitCount: product.digitalDownloadLimit,
+              },
+            })
+          }),
+        )
       }
       // Tous les flags digitalGranted en UNE instruction (au lieu de N)
       await tx.orderItem.updateMany({
@@ -660,21 +665,40 @@ export async function cancelOrder(orderId: string, reason: string, actor: Actor)
   const wasPaid = order.paymentStatus === "PAYMENT_PAID"
 
   await db.$transaction(async (tx) => {
-    // Restitution du stock physique
+    // Restitution du stock physique — 1 lecture globale (anti-N+1) puis
+    // increments AGRÉGÉS par produit/variante : un même produit peut figurer
+    // sur plusieurs lignes, on somme les quantités pour un résultat identique
+    const productIds = [...new Set(order.items.map((i) => i.productId))]
+    const products = productIds.length
+      ? await tx.product.findMany({ where: { id: { in: productIds } } })
+      : []
+    const productById = new Map(products.map((p) => [p.id, p]))
+    const restockByProduct = new Map<string, number>()
+    const restockByVariant = new Map<string, number>()
     for (const item of order.items) {
-      const product = await tx.product.findUnique({ where: { id: item.productId } })
+      const product = productById.get(item.productId)
       if (!product) continue
       if (!item.isFreeItem && product.type !== "DIGITAL" && product.trackInventory) {
         if (item.variantId) {
-          await tx.productVariant.update({ where: { id: item.variantId }, data: { stock: { increment: item.quantity } } })
+          restockByVariant.set(item.variantId, (restockByVariant.get(item.variantId) ?? 0) + item.quantity)
         } else {
-          await tx.product.update({
-            where: { id: product.id },
-            data: { stock: { increment: item.quantity }, salesCount: { decrement: item.quantity } },
-          })
+          restockByProduct.set(product.id, (restockByProduct.get(product.id) ?? 0) + item.quantity)
         }
       }
     }
+    // Un update par ligne DISTINCTE (stock + salesCount relatifs → exacts)
+    const restockOps = [
+      ...[...restockByProduct.entries()].map(([productId, quantity]) =>
+        tx.product.update({
+          where: { id: productId },
+          data: { stock: { increment: quantity }, salesCount: { decrement: quantity } },
+        }),
+      ),
+      ...[...restockByVariant.entries()].map(([variantId, quantity]) =>
+        tx.productVariant.update({ where: { id: variantId }, data: { stock: { increment: quantity } } }),
+      ),
+    ]
+    if (restockOps.length > 0) await Promise.all(restockOps)
     // Révocation des accès numériques
     await tx.digitalDownloadGrant.updateMany({
       where: { orderItemId: { in: order.items.map((i) => i.id) } },

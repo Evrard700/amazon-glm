@@ -21,7 +21,7 @@ export async function GET() {
   const body: Record<string, string> = {}
 
   body["DATABASE_URL"] = !dbUrl
-    ? "❌ ABSENTE — ajoutez-la dans Vercel → Settings → Environment Variables"
+    ? "❌ ABSENTE — ajoutez-la dans les variables d'environnement de votre hébergeur (Hostinger → hPanel → Node.js → Variables d'environnement)"
     : dbUrl.startsWith("postgresql://") || dbUrl.startsWith("postgres://")
       ? "✅ présente et bien formée"
       : "❌ présente mais MAL FORMÉE — elle doit commencer par postgresql://"
@@ -64,8 +64,8 @@ function render(body: Record<string, string>, cachedForMs: number) {
 <h1 style="font-size:22px">🩺 Diagnostic Téranga Market</h1>
 <table style="border-collapse:collapse;background:#fff;border:1px solid #ddd;border-radius:8px">${rows}</table>
 <p style="color:#777;font-size:13px;margin-top:18px;line-height:1.5">
-Si une ligne affiche ❌ : corrigez la variable dans Vercel → Settings → Environment Variables,
-puis Deployments → bouton ⋯ → Redeploy, et rouvrez cette page.${cachedForMs ? ` <em>(résultat mis en cache ${Math.round(cachedForMs / 1000)} s)</em>` : ""}</p>
+Si une ligne affiche ❌ : corrigez la variable dans votre hébergeur (Hostinger → hPanel → Node.js → Variables d'environnement),
+puis redémarrez l'application, et rouvrez cette page.${cachedForMs ? ` <em>(résultat mis en cache ${Math.round(cachedForMs / 1000)} s)</em>` : ""}</p>
 </body></html>`
 
   return new Response(html, { headers: { "content-type": "text/html; charset=utf-8" } })

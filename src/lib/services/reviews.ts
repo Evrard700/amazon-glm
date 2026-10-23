@@ -23,15 +23,16 @@ export async function createReview(input: {
   title?: string
   comment: string
 }) {
-  const product = await db.product.findFirst({ where: { id: input.productId, deletedAt: null } })
+  // 4 lectures indépendantes (clés passées en argument) → 1 seule salve parallèle
+  const [product, existing, isVerifiedBuyer, settings] = await Promise.all([
+    db.product.findFirst({ where: { id: input.productId, deletedAt: null } }),
+    db.review.findFirst({ where: { productId: input.productId, userId: input.userId } }),
+    canReviewProduct(input.userId, input.productId),
+    db.storeSettings.findUniqueOrThrow({ where: { id: 1 } }),
+  ])
   if (!product) throw new ApiError("Produit introuvable.", 404)
-
-  const existing = await db.review.findFirst({ where: { productId: input.productId, userId: input.userId } })
   if (existing) throw new ApiError("Vous avez déjà publié un avis pour ce produit.", 409)
 
-  const isVerifiedBuyer = await canReviewProduct(input.userId, input.productId)
-
-  const settings = await db.storeSettings.findUniqueOrThrow({ where: { id: 1 } })
   const status = isVerifiedBuyer && settings.reviewsAutoApprove ? "APPROVED" : "PENDING"
 
   const review = await db.review.create({

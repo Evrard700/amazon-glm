@@ -41,7 +41,16 @@ export default async function OrderConfirmationPage({
   const children = await db.order.findMany({
     where: { upsellParentOrderId: order.id },
     orderBy: { createdAt: "asc" },
-    include: { items: true },
+    // Anti-overfetching : seule la quantité est lue pour le total d'articles
+    // (select ciblé au lieu de lignes complètes) — même total reproduit
+    select: {
+      orderNumber: true,
+      orderStatus: true,
+      paymentStatus: true,
+      total: true,
+      accessToken: true,
+      items: { select: { quantity: true } },
+    },
   })
   const linked: LinkedOrderDto[] = children.map((child) => ({
     orderNumber: child.orderNumber,

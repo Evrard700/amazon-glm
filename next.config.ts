@@ -10,11 +10,12 @@ const nextConfig: NextConfig = {
   compress: true,
   // Hébergeur des visuels produits (seed OSS + uploads futurs) — requis par
   // next/image partout dans le storefront (sinon erreur "hostname not configured").
-  // Ajouté par 2-b pour débloquer toutes les pages storefront (voir worklog).
+  // Liste BLANCHE stricte : uniquement le CDN des visuels du seed (les uploads
+  // admin sont locaux dans /public/uploads, servis same-origin). L'ancien
+  // wildcard "**" acceptait n'importe quel hôte (risque de proxy d'images).
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "z-cdn.chatglm.cn" },
-      { protocol: "https", hostname: "**" },
     ],
     // Avif + WebP : poids réduit pour mobiles/connexions lentes.
     formats: ["image/avif", "image/webp"],
@@ -23,7 +24,7 @@ const nextConfig: NextConfig = {
   },
   // Tree-shaking des imports nommés volumineux (gain notable côté client).
   experimental: {
-    optimizePackageImports: ["lucide-react", "framer-motion", "date-fns"],
+    optimizePackageImports: ["lucide-react", "date-fns"],
   },
   // En-têtes de sécurité de base appliquées à toutes les réponses :
   //  - nosniff : pas de détournement MIME ;

@@ -31,12 +31,15 @@ export async function attachReferrer(
   referralCode: string,
   source: "SIGNUP" | "CHECKOUT",
 ): Promise<{ ok: true; referrerName: string } | { ok: false; reason: string }> {
-  const client = await db.user.findUniqueOrThrow({ where: { id: clientUserId } })
+  const clean = referralCode.trim().toUpperCase()
+  // Lectures indépendantes (clés passées en argument) → 1 salve parallèle
+  const [client, referrer] = await Promise.all([
+    db.user.findUniqueOrThrow({ where: { id: clientUserId } }),
+    db.user.findUnique({ where: { referralCode: clean } }),
+  ])
   if (client.referredById) {
     return { ok: false, reason: "Ce client a déjà un parrain." }
   }
-  const clean = referralCode.trim().toUpperCase()
-  const referrer = await db.user.findUnique({ where: { referralCode: clean } })
   if (!referrer) return { ok: false, reason: "Ce code de parrainage n'existe pas." }
   if (referrer.id === clientUserId) return { ok: false, reason: "Vous ne pouvez pas utiliser votre propre code de parrainage." }
   if (referrer.role !== "CUSTOMER" && referrer.role !== "OWNER") {
@@ -74,38 +77,83 @@ async function eligibleSubtotalOfOrder(
   return items.filter((i) => !i.isFreeItem && scopedIds.has(i.productId)).reduce((s, i) => s + i.lineTotal, 0)
 }
 
+/** Ligne de commande minimale pour le calcul d'éligibilité (batch anti-N+1). */
+interface EligibleLine {
+  productId: string
+  lineTotal: number
+  isFreeItem: boolean
+}
+
+/** Sous-total éligible calculé EN MÉMOIRE sur des lignes préchargées
+ *  (reflet EXACT d'eligibleSubtotalOfOrder, sans requête par commande). */
+function eligibleSubtotalOfLines(
+  items: EligibleLine[],
+  scopedIds: Set<string>,
+  hasScope: boolean,
+): number {
+  if (!hasScope) {
+    return items.filter((i) => !i.isFreeItem).reduce((s, i) => s + i.lineTotal, 0)
+  }
+  return items
+    .filter((i) => !i.isFreeItem && scopedIds.has(i.productId))
+    .reduce((s, i) => s + i.lineTotal, 0)
+}
+
+/** Périmètre éligible complet (produits listés ∪ produits des catégories listées)
+ *  — 1 seule requête, partagée par tous les calculs du programme. */
+async function loadEligibleScope(
+  eligibleProductIds: string[],
+  eligibleCategoryIds: string[],
+): Promise<{ scopedIds: Set<string>; hasScope: boolean }> {
+  const hasScope = eligibleProductIds.length > 0 || eligibleCategoryIds.length > 0
+  const scopedIds = new Set(eligibleProductIds)
+  if (eligibleCategoryIds.length > 0) {
+    const links = await db.productCategory.findMany({ where: { categoryId: { in: eligibleCategoryIds } } })
+    links.forEach((l) => scopedIds.add(l.productId))
+  }
+  return { scopedIds, hasScope }
+}
+
 /**
  * À appeler UNIQUEMENT après confirmation réelle du paiement.
  * Crée les récompenses de commission (idempotent via uniqueKey).
  */
 export async function processCommissionRewardForOrder(orderId: string): Promise<void> {
-  const order = await db.order.findUnique({
-    where: { id: orderId },
-    include: { items: true },
-  })
+  // Commande + programme indépendants → 1 salve parallèle
+  const [order, program] = await Promise.all([
+    db.order.findUnique({
+      where: { id: orderId },
+      include: { items: true },
+    }),
+    getReferralProgram(),
+  ])
   if (!order || !order.referrerId || !order.userId) return
 
-  const program = await getReferralProgram()
   if (!program.isActive) return
   const now = Date.now()
   if (program.startsAt && program.startsAt.getTime() > now) return
   if (program.endsAt && program.endsAt.getTime() < now) return
   if (order.paymentStatus !== "PAYMENT_PAID") return // sécurité double
 
-  const referrer = await db.user.findUnique({ where: { id: order.referrerId } })
+  // Parrain + compteurs de limites en 1 salve parallèle (clé = order.referrerId,
+  // connu ici) ; les compteurs ne sont lus QUE si la limite correspondante est définie
+  const referrerId = order.referrerId
+  const [referrer, rewardsCount, referralsCount] = await Promise.all([
+    db.user.findUnique({ where: { id: referrerId } }),
+    program.maxRewardsPerReferrer !== null
+      ? db.reward.count({
+          where: { beneficiaryId: referrerId, program: "COMMISSION", status: { not: "REWARD_CANCELLED" } },
+        })
+      : Promise.resolve(0),
+    program.maxReferralsPerReferrer !== null
+      ? db.user.count({ where: { referredById: referrerId } })
+      : Promise.resolve(0),
+  ])
   if (!referrer) return
 
   // Limites par parrain
-  if (program.maxRewardsPerReferrer !== null) {
-    const count = await db.reward.count({
-      where: { beneficiaryId: referrer.id, program: "COMMISSION", status: { not: "REWARD_CANCELLED" } },
-    })
-    if (count >= program.maxRewardsPerReferrer) return
-  }
-  if (program.maxReferralsPerReferrer !== null) {
-    const count = await db.user.count({ where: { referredById: referrer.id } })
-    if (count > program.maxReferralsPerReferrer) return
-  }
+  if (program.maxRewardsPerReferrer !== null && rewardsCount >= program.maxRewardsPerReferrer) return
+  if (program.maxReferralsPerReferrer !== null && referralsCount > program.maxReferralsPerReferrer) return
 
   const eligibleAmount = await eligibleSubtotalOfOrder(
     order.id,
@@ -174,20 +222,40 @@ export async function maybeCreateFullRefundRewardForParrain(parrainId: string): 
 
   const eligibleProductIds = parseJson<string[]>(program.eligibleProductIdsJson, [])
   const eligibleCategoryIds = parseJson<string[]>(program.eligibleCategoryIdsJson, [])
+  const { scopedIds, hasScope } = await loadEligibleScope(eligibleProductIds, eligibleCategoryIds)
 
-  // Filleuls qualifiés : chacun a ≥ requiredPaidOrdersPerReferral commandes PAYÉES ≥ minOrderAmountPerReferral
+  // Filleuls qualifiés : chacun a ≥ requiredPaidOrdersPerReferral commandes PAYÉES ≥ minOrderAmountPerReferral.
+  // BATCH anti-N+1 (même calcul que la boucle d'origine) : 1 lecture des filleuls +
+  // 1 lecture de TOUTES les lignes de leurs commandes payées non annulées.
   const filleuls = await db.user.findMany({ where: { referredById: parrainId } })
   let qualified = 0
-  for (const filleul of filleuls) {
-    const paidOrders = await db.order.findMany({
-      where: { userId: filleul.id, paymentStatus: "PAYMENT_PAID", orderStatus: { notIn: ["CANCELLED"] } },
+  if (filleuls.length > 0) {
+    const paidItems = await db.orderItem.findMany({
+      where: {
+        order: { userId: { in: filleuls.map((f) => f.id) }, paymentStatus: "PAYMENT_PAID", orderStatus: { notIn: ["CANCELLED"] } },
+      },
+      select: { orderId: true, productId: true, lineTotal: true, isFreeItem: true, order: { select: { userId: true } } },
     })
-    let qualifying = 0
-    for (const o of paidOrders) {
-      const amount = await eligibleSubtotalOfOrder(o.id, eligibleProductIds, eligibleCategoryIds)
-      if (amount >= program.minOrderAmountPerReferral) qualifying++
+    // filleulId → orderId → lignes (une commande appartient à un seul client)
+    const itemsByFilleulByOrder = new Map<string, Map<string, EligibleLine[]>>()
+    for (const item of paidItems) {
+      const ownerId = item.order.userId
+      if (!ownerId) continue
+      const perOrder = itemsByFilleulByOrder.get(ownerId) ?? new Map<string, EligibleLine[]>()
+      const bucket = perOrder.get(item.orderId) ?? []
+      bucket.push({ productId: item.productId, lineTotal: item.lineTotal, isFreeItem: item.isFreeItem })
+      perOrder.set(item.orderId, bucket)
+      itemsByFilleulByOrder.set(ownerId, perOrder)
     }
-    if (qualifying >= program.requiredPaidOrdersPerReferral) qualified++
+    for (const filleul of filleuls) {
+      const perOrder = itemsByFilleulByOrder.get(filleul.id) ?? new Map<string, EligibleLine[]>()
+      let qualifying = 0
+      for (const lines of perOrder.values()) {
+        const amount = eligibleSubtotalOfLines(lines, scopedIds, hasScope)
+        if (amount >= program.minOrderAmountPerReferral) qualifying++
+      }
+      if (qualifying >= program.requiredPaidOrdersPerReferral) qualified++
+    }
   }
   if (qualified < program.requiredReferrals) return null
 
@@ -196,38 +264,60 @@ export async function maybeCreateFullRefundRewardForParrain(parrainId: string): 
     where: { userId: parrainId, paymentStatus: "PAYMENT_PAID", orderStatus: { notIn: ["CANCELLED", "REFUNDED"] } },
     orderBy: { paidAt: "desc" },
   })
-  for (const o of parrainOrders) {
-    const existing = await db.reward.findUnique({ where: { uniqueKey: `fullrefund:${o.id}:${program.id}` } })
-    if (existing) continue
-    const amount = await eligibleSubtotalOfOrder(o.id, eligibleProductIds, eligibleCategoryIds)
-    if (amount < program.minSourceOrderAmount) continue
+  if (parrainOrders.length > 0) {
+    // BATCH : lignes des commandes du parrain + récompenses existantes en 2 requêtes
+    // (les uniqueKey "fullrefund:{orderId}:{programId}" sont exactement celles
+    // recherchées par l'ancien findUnique par commande)
+    const [parrainItems, existingRewards] = await Promise.all([
+      db.orderItem.findMany({
+        where: { orderId: { in: parrainOrders.map((o) => o.id) } },
+        select: { orderId: true, productId: true, lineTotal: true, isFreeItem: true },
+      }),
+      db.reward.findMany({
+        where: { uniqueKey: { in: parrainOrders.map((o) => `fullrefund:${o.id}:${program.id}`) } },
+        select: { uniqueKey: true },
+      }),
+    ])
+    const itemsByOrder = new Map<string, EligibleLine[]>()
+    for (const item of parrainItems) {
+      const bucket = itemsByOrder.get(item.orderId) ?? []
+      bucket.push({ productId: item.productId, lineTotal: item.lineTotal, isFreeItem: item.isFreeItem })
+      itemsByOrder.set(item.orderId, bucket)
+    }
+    const existingKeys = new Set(existingRewards.map((r) => r.uniqueKey))
 
-    const raw = percentOf(amount, program.refundPercent)
-    const refundAmount = program.refundCap !== null ? Math.min(raw, program.refundCap) : raw
-    if (refundAmount <= 0) return null
+    for (const o of parrainOrders) {
+      if (existingKeys.has(`fullrefund:${o.id}:${program.id}`)) continue
+      const amount = eligibleSubtotalOfLines(itemsByOrder.get(o.id) ?? [], scopedIds, hasScope)
+      if (amount < program.minSourceOrderAmount) continue
 
-    const eligibleAt = new Date(Date.now() + program.holdPeriodDays * 24 * 60 * 60 * 1000)
-    await db.reward.create({
-      data: {
-        program: "FULL_REFUND",
-        programId: program.id,
-        beneficiaryId: parrainId,
-        sourceOrderId: o.id,
-        amount: refundAmount,
-        status: "REWARD_PENDING",
-        uniqueKey: `fullrefund:${o.id}:${program.id}`,
-        ruleSnapshotJson: JSON.stringify({
-          requiredReferrals: program.requiredReferrals,
-          refundPercent: program.refundPercent,
-          refundCap: program.refundCap,
-          rewardMode: program.rewardMode,
-          programName: program.name,
-        }),
-        reason: `Remboursement parrainage (${qualified} filleuls qualifiés) : ${formatXOF(refundAmount)} sur la commande ${o.orderNumber}.`,
-        eligibleAt,
-      },
-    })
-    return o.id
+      const raw = percentOf(amount, program.refundPercent)
+      const refundAmount = program.refundCap !== null ? Math.min(raw, program.refundCap) : raw
+      if (refundAmount <= 0) return null
+
+      const eligibleAt = new Date(Date.now() + program.holdPeriodDays * 24 * 60 * 60 * 1000)
+      await db.reward.create({
+        data: {
+          program: "FULL_REFUND",
+          programId: program.id,
+          beneficiaryId: parrainId,
+          sourceOrderId: o.id,
+          amount: refundAmount,
+          status: "REWARD_PENDING",
+          uniqueKey: `fullrefund:${o.id}:${program.id}`,
+          ruleSnapshotJson: JSON.stringify({
+            requiredReferrals: program.requiredReferrals,
+            refundPercent: program.refundPercent,
+            refundCap: program.refundCap,
+            rewardMode: program.rewardMode,
+            programName: program.name,
+          }),
+          reason: `Remboursement parrainage (${qualified} filleuls qualifiés) : ${formatXOF(refundAmount)} sur la commande ${o.orderNumber}.`,
+          eligibleAt,
+        },
+      })
+      return o.id
+    }
   }
   return null
 }
@@ -242,14 +332,32 @@ export async function processDueRewards(): Promise<number> {
     where: { status: "REWARD_PENDING", eligibleAt: { lte: new Date() } },
     take: 50,
   })
+  if (due.length === 0) return 0
+
+  // BATCH : tous les bénéficiaires en 1 lecture (au lieu d'un findUniqueOrThrow
+  // par récompense). Le solde est suivi EN MÉMOIRE de façon séquentielle :
+  // plusieurs récompenses du même bénéficiaire s'enchaînent avec un balanceAfter
+  // exact (reflet des relectures d'origine).
+  const beneficiaryIds = [...new Set(due.map((r) => r.beneficiaryId))]
+  const beneficiaries = await db.user.findMany({ where: { id: { in: beneficiaryIds } } })
+  const userById = new Map(beneficiaries.map((u) => [u.id, u]))
+  const balanceByUser = new Map<string, number>()
+
   let processed = 0
   for (const reward of due) {
     const snap = parseJson<{ rewardMode?: string }>(reward.ruleSnapshotJson, {})
     const mode = snap.rewardMode ?? "STORE_CREDIT"
     await db.$transaction(async (tx) => {
       if (mode === "STORE_CREDIT") {
-        const user = await tx.user.findUniqueOrThrow({ where: { id: reward.beneficiaryId } })
-        const balanceAfter = user.storeCredit + reward.amount
+        const user = userById.get(reward.beneficiaryId)
+        if (!user) {
+          // Cas impossible (la relation bénéficiaire est une FK Cascade) :
+          // reproduit l'échec du findUniqueOrThrow d'origine.
+          throw new Error("Bénéficiaire de la récompense introuvable.")
+        }
+        const currentBalance = balanceByUser.get(user.id) ?? user.storeCredit
+        const balanceAfter = currentBalance + reward.amount
+        balanceByUser.set(user.id, balanceAfter)
         await tx.user.update({ where: { id: user.id }, data: { storeCredit: balanceAfter } })
         await tx.creditTransaction.create({
           data: {
@@ -289,12 +397,10 @@ export async function processDueRewards(): Promise<number> {
 
 /** Annule/suspend les récompenses liées à une commande annulée ou remboursée. */
 export async function cancelRewardsForOrder(orderId: string, reason: string): Promise<number> {
-  const rewards = await db.reward.findMany({ where: { sourceOrderId: orderId, status: { in: ["REWARD_PENDING", "REWARD_APPROVED"] } } })
-  for (const reward of rewards) {
-    await db.reward.update({
-      where: { id: reward.id },
-      data: { status: "REWARD_CANCELLED", cancelledAt: new Date(), cancelledReason: reason },
-    })
-  }
-  return rewards.length
+  // 1 seul UPDATE global (mêmes filtres que l'ancienne boucle findMany + update par ligne)
+  const result = await db.reward.updateMany({
+    where: { sourceOrderId: orderId, status: { in: ["REWARD_PENDING", "REWARD_APPROVED"] } },
+    data: { status: "REWARD_CANCELLED", cancelledAt: new Date(), cancelledReason: reason },
+  })
+  return result.count
 }

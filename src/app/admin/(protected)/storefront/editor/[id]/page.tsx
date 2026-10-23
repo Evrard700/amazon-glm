@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation"
 import { db } from "@/lib/db"
 import { parsePublishedSections } from "@/components/storefront/sections/render"
-import { PageEditor } from "@/components/admin/editor/page-editor"
+import { PageEditorLoader } from "@/components/admin/editor/page-editor-loader"
 
 export default async function EditorPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -11,7 +11,7 @@ export default async function EditorPage({ params }: { params: Promise<{ id: str
   const sections = parsePublishedSections(page.draftData)
 
   return (
-    <PageEditor
+    <PageEditorLoader
       page={{
         id: page.id,
         title: page.title,

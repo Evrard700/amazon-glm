@@ -1,16 +1,8 @@
 "use client"
 
 import { useCallback, useEffect, useState } from "react"
+import dynamic from "next/dynamic"
 import Link from "next/link"
-import {
-  Area,
-  AreaChart,
-  CartesianGrid,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts"
 import {
   ArrowRight,
   BadgeCheck,
@@ -31,7 +23,7 @@ import { AdminPageHeader } from "@/components/admin/page-header"
 import { StatCard } from "@/components/admin/stat-card"
 import { useAdminApi } from "@/components/admin/api-client"
 import { OrderStatusBadge, PaymentStatusBadge, ProductTypeBadge } from "@/components/admin/shared/badges"
-import { formatDayShort, formatRelative } from "@/components/admin/shared/format"
+import { formatRelative } from "@/components/admin/shared/format"
 import { parseJson } from "@/lib/json"
 import { formatXOF } from "@/lib/money"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -39,6 +31,14 @@ import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+
+// recharts (~100 Ko gzippé) chargé à la demande : le tableau de bord
+// s'affiche immédiatement (KPI, listes), le graphique arrive derrière
+// avec un squelette de même hauteur — aucun décalage visuel.
+const RevenueChart = dynamic(() => import("@/components/admin/dashboard-chart").then((m) => m.RevenueChart), {
+  ssr: false,
+  loading: () => <Skeleton className="h-64 w-full" />,
+})
 
 interface DashboardStats {
   days: number
@@ -207,39 +207,7 @@ export default function AdminDashboardPage() {
             <Skeleton className="h-64 w-full" />
           ) : (
             <div className="h-64 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={stats?.revenueByDay ?? []} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="caGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#f59e0b" stopOpacity={0.35} />
-                      <stop offset="100%" stopColor="#f59e0b" stopOpacity={0.02} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" vertical={false} />
-                  <XAxis
-                    dataKey="day"
-                    tickFormatter={(v: string) => formatDayShort(v)}
-                    tick={{ fontSize: 11 }}
-                    interval="preserveStartEnd"
-                    minTickGap={24}
-                    axisLine={false}
-                    tickLine={false}
-                  />
-                  <YAxis
-                    tick={{ fontSize: 11 }}
-                    tickFormatter={(v: number) => (v >= 1000 ? `${Math.round(v / 1000)}k` : `${v}`)}
-                    axisLine={false}
-                    tickLine={false}
-                    width={36}
-                  />
-                  <Tooltip
-                    formatter={(value) => [formatXOF(Number(value)), "CA payé"]}
-                    labelFormatter={(label) => formatDayShort(label)}
-                    contentStyle={{ borderRadius: 12, border: "1px solid hsl(var(--border))", fontSize: 12 }}
-                  />
-                  <Area type="monotone" dataKey="amount" stroke="#d97706" strokeWidth={2} fill="url(#caGradient)" />
-                </AreaChart>
-              </ResponsiveContainer>
+              <RevenueChart data={stats?.revenueByDay ?? []} />
             </div>
           )}
         </CardContent>

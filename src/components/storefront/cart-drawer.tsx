@@ -1,9 +1,8 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
-import { AnimatePresence, motion } from "framer-motion"
 import { Minus, Plus, ShoppingBag, Trash2, X, TicketPercent, ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -18,24 +17,20 @@ export function CartDrawer() {
 
   const subtotalAfter = Math.max(0, store.subtotal - store.promotionDiscount - store.couponDiscount)
 
+  // CSS pur (remplace AnimatePresence + motion) : entrées animées par les
+  // keyframes slide-in-right / fade-in de globals.css ; fermeture instantanée
+  // (choix assumé — l'ancien exit framer est abandonné pour rester simple).
   return (
-    <AnimatePresence>
+    <>
       {store.drawerOpen && (
         <>
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-foreground/40 backdrop-blur-sm"
+          <div
+            className="fixed inset-0 z-50 animate-[fade-in_0.25s_ease-out] bg-foreground/40 backdrop-blur-sm"
             onClick={store.closeDrawer}
             aria-hidden
           />
-          <motion.aside
-            initial={{ x: "100%" }}
-            animate={{ x: 0 }}
-            exit={{ x: "100%" }}
-            transition={{ type: "tween", duration: 0.28, ease: [0.32, 0.72, 0, 1] }}
-            className="fixed inset-y-0 right-0 z-50 flex w-full max-w-md flex-col bg-background shadow-2xl"
+          <aside
+            className="fixed inset-y-0 right-0 z-50 flex w-full max-w-md flex-col animate-[slide-in-right_0.28s_cubic-bezier(0.32,0.72,0,1)] bg-background shadow-2xl"
             role="dialog"
             aria-label="Panier"
           >
@@ -227,9 +222,9 @@ export function CartDrawer() {
                 </div>
               </footer>
             )}
-          </motion.aside>
+          </aside>
         </>
       )}
-    </AnimatePresence>
+    </>
   )
 }

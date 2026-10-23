@@ -40,12 +40,45 @@ export async function eligibleUpsellsForOrder(orderId: string): Promise<Eligible
     where: { isActive: true, showOnThankYou: true, AND: [{ OR: [{ startsAt: null }, { startsAt: { lte: new Date() } }] }, { OR: [{ endsAt: null }, { endsAt: { gte: new Date() } }] }] },
     orderBy: { position: "asc" },
   })
+  if (offers.length === 0) return []
+
+  // --- Préchargement global : 3 requêtes au lieu de 3 par offre (anti-N+1) ---
+  // 1) Produits proposés par les offres (mêmes filtres que l'ancien findFirst par offre)
+  const offerProductIds = [...new Set(offers.map((o) => o.offerProductId))]
+  const products = await db.product.findMany({
+    where: { id: { in: offerProductIds }, status: "ACTIVE", deletedAt: null },
+  })
+  const productById = new Map(products.map((p) => [p.id, p]))
+
+  // 2) Liens produit↔catégorie pour TOUS les déclencheurs CATEGORY confondus
+  //    (mêmes données que l'ancien findMany par offre, fusionnées en une requête)
+  const allTriggerCategoryIds = [
+    ...new Set(
+      offers
+        .filter((o) => o.triggerType === "CATEGORY")
+        .flatMap((o) => parseJson<string[]>(o.triggerCategoryIdsJson, [])),
+    ),
+  ]
+  const categoryLinks = allTriggerCategoryIds.length
+    ? await db.productCategory.findMany({ where: { categoryId: { in: allTriggerCategoryIds } } })
+    : []
+  // categoryId → ensemble des produits liés (union recalculée par offre en mémoire)
+  const productIdsByCategoryId = new Map<string, Set<string>>()
+  for (const link of categoryLinks) {
+    const set = productIdsByCategoryId.get(link.categoryId) ?? new Set<string>()
+    set.add(link.productId)
+    productIdsByCategoryId.set(link.categoryId, set)
+  }
+
+  // 3) Acceptations upsell existantes pour cette commande (idempotence)
+  const acceptances = await db.upsellAcceptance.findMany({ where: { orderId }, select: { offerId: true } })
+  const acceptedOfferIds = new Set(acceptances.map((a) => a.offerId))
 
   const results: EligibleUpsell[] = []
   for (const offer of offers) {
     if (offer.maxAccepts !== null && offer.acceptedCount >= offer.maxAccepts) continue
 
-    const product = await db.product.findFirst({ where: { id: offer.offerProductId, status: "ACTIVE", deletedAt: null } })
+    const product = productById.get(offer.offerProductId)
     if (!product) continue
     if (product.type !== "DIGITAL" && product.trackInventory && product.stock < 1) continue
 
@@ -56,8 +89,10 @@ export async function eligibleUpsellsForOrder(orderId: string): Promise<Eligible
     if (offer.triggerType === "PRODUCT") {
       matches = order.items.some((i) => triggerProducts.includes(i.productId))
     } else if (offer.triggerType === "CATEGORY") {
-      const links = await db.productCategory.findMany({ where: { categoryId: { in: triggerCategories } } })
-      const scopedIds = new Set(links.map((l) => l.productId))
+      const scopedIds = new Set<string>()
+      for (const categoryId of triggerCategories) {
+        for (const productId of productIdsByCategoryId.get(categoryId) ?? []) scopedIds.add(productId)
+      }
       matches = order.items.some((i) => scopedIds.has(i.productId))
     } else if (offer.triggerType === "ORDER_AMOUNT") {
       matches = order.subtotal >= offer.triggerMinAmount
@@ -67,10 +102,7 @@ export async function eligibleUpsellsForOrder(orderId: string): Promise<Eligible
     // Ne pas reproposer un produit déjà présent dans la commande
     if (order.items.some((i) => i.productId === offer.offerProductId)) continue
 
-    const alreadyAccepted = !!(await db.upsellAcceptance.findUnique({
-      where: { offerId_orderId: { offerId: offer.id, orderId } },
-    }))
-    if (alreadyAccepted) continue
+    if (acceptedOfferIds.has(offer.id)) continue
 
     const normalPrice = product.salePrice ?? product.price
     results.push({
@@ -100,7 +132,12 @@ export async function acceptUpsell(
   orderId: string,
   actor: { id: string; name: string } | null,
 ): Promise<{ orderNumber: string; complementaryOrderId: string }> {
-  const offer = await db.upsellOffer.findUnique({ where: { id: offerId } })
+  // Lectures indépendantes (clés passées en argument) → une seule salve parallèle
+  const [offer, parent, existing] = await Promise.all([
+    db.upsellOffer.findUnique({ where: { id: offerId } }),
+    db.order.findUnique({ where: { id: orderId }, include: { items: true } }),
+    db.upsellAcceptance.findUnique({ where: { offerId_orderId: { offerId, orderId } } }),
+  ])
   if (!offer || !offer.isActive) throw new ApiError("Cette offre n'est plus disponible.", 404)
   const now = new Date()
   if (offer.startsAt && offer.startsAt > now) throw new ApiError("Cette offre n'est pas encore active.", 409)
@@ -109,11 +146,9 @@ export async function acceptUpsell(
     throw new ApiError("Cette offre a atteint sa limite d'acceptations.", 409)
   }
 
-  const parent = await db.order.findUnique({ where: { id: orderId }, include: { items: true } })
   if (!parent) throw new ApiError("Commande initiale introuvable.", 404)
 
   // Idempotence : une même offre ne peut être acceptée qu'une fois pour la commande
-  const existing = await db.upsellAcceptance.findUnique({ where: { offerId_orderId: { offerId, orderId } } })
   if (existing) {
     const child = existing.complementaryOrderId
       ? await db.order.findUnique({ where: { id: existing.complementaryOrderId } })

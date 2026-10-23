@@ -23,9 +23,18 @@ function getSecret(): Uint8Array {
 
 /** Demande de téléchargement : vérifie le droit et délivre un lien à jeton court. */
 export async function requestDownload(grantId: string, userId: string) {
+  // Lecture unique ciblée : le produit est fusionné dans l'include du grant
+  // (plus de product.findUnique séparé), et seuls les champs utilisés sont chargés.
   const grant = await db.digitalDownloadGrant.findUnique({
     where: { id: grantId },
-    include: { orderItem: { include: { order: true, product: true } }, user: true },
+    include: {
+      orderItem: {
+        select: {
+          order: { select: { paymentStatus: true } },
+          product: { select: { digitalFileUrl: true, digitalFileName: true } },
+        },
+      },
+    },
   })
   if (!grant) throw new ApiError("Accès introuvable.", 404)
   if (grant.userId !== userId) throw new ApiError("Ce téléchargement ne vous appartient pas.", 403)
@@ -36,11 +45,10 @@ export async function requestDownload(grantId: string, userId: string) {
       409,
     )
   }
-  const order = grant.orderItem.order
-  if (order.paymentStatus !== "PAYMENT_PAID") {
+  if (grant.orderItem.order.paymentStatus !== "PAYMENT_PAID") {
     throw new ApiError("Le paiement de la commande doit être confirmé pour accéder au fichier.", 402)
   }
-  const product = await db.product.findUnique({ where: { id: grant.orderItem.productId } })
+  const product = grant.orderItem.product
   if (!product?.digitalFileUrl) throw new ApiError("Fichier introuvable pour ce produit.", 404)
 
   const token = await new SignJWT({ grantId, userId, file: product.digitalFileUrl })

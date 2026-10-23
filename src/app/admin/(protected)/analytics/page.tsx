@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import dynamic from "next/dynamic"
 import {
   BarChart3,
   TrendingUp,
@@ -9,17 +10,6 @@ import {
   Gift,
   TrendingUp as UpsellIcon,
 } from "lucide-react"
-import {
-  ResponsiveContainer,
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  BarChart,
-  Bar,
-} from "recharts"
 import { AdminPageHeader } from "@/components/admin/page-header"
 import { StatCard } from "@/components/admin/stat-card"
 import { useAdminApi } from "@/components/admin/api-client"
@@ -27,6 +17,23 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Image as ImageIcon } from "lucide-react"
 import { formatXOF } from "@/lib/money"
+import { Skeleton } from "@/components/ui/skeleton"
+
+// recharts (~100 Ko gzippé) chargé à la demande : les trois graphiques
+// partagent le même module (une seule requête), la page s'affiche
+// immédiatement et chaque emplacement garde sa hauteur via un squelette.
+const RevenuePerDayChart = dynamic(
+  () => import("@/components/admin/analytics-charts").then((m) => m.RevenuePerDayChart),
+  { ssr: false, loading: () => <Skeleton className="h-full w-full" /> },
+)
+const ClientsPerDayChart = dynamic(
+  () => import("@/components/admin/analytics-charts").then((m) => m.ClientsPerDayChart),
+  { ssr: false, loading: () => <Skeleton className="h-full w-full" /> },
+)
+const RevenueByCategoryChart = dynamic(
+  () => import("@/components/admin/analytics-charts").then((m) => m.RevenueByCategoryChart),
+  { ssr: false, loading: () => <Skeleton className="h-full w-full" /> },
+)
 
 interface AnalyticsData {
   revenueByCategory: { id: string; name: string; revenue: number; units: number }[]
@@ -79,63 +86,21 @@ export default function AdminAnalyticsPage() {
         <Card>
           <CardHeader className="pb-3"><CardTitle className="flex items-center gap-2 text-base"><TrendingUp className="h-4 w-4 text-brand-foreground" /> Chiffre d'affaires par jour</CardTitle></CardHeader>
           <CardContent className="h-64">
-            {data && (
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={data.perDayRevenue}>
-                  <defs>
-                    <linearGradient id="revGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#f59e0b" stopOpacity={0.5} />
-                      <stop offset="100%" stopColor="#f59e0b" stopOpacity={0.05} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e7e5e4" vertical={false} />
-                  <XAxis dataKey="date" tick={{ fontSize: 11 }} tickFormatter={(v) => v.slice(5)} />
-                  <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `${Math.round(v / 1000)}k`} />
-                  <Tooltip formatter={(v: number) => formatXOF(v)} labelStyle={{ fontSize: 12 }} />
-                  <Area type="monotone" dataKey="revenue" stroke="#d97706" strokeWidth={2} fill="url(#revGradient)" name="CA" />
-                </AreaChart>
-              </ResponsiveContainer>
-            )}
+            {data && <RevenuePerDayChart data={data.perDayRevenue} />}
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="pb-3"><CardTitle className="flex items-center gap-2 text-base"><Users className="h-4 w-4 text-brand-foreground" /> Nouveaux clients par jour</CardTitle></CardHeader>
           <CardContent className="h-64">
-            {data && (
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={data.perDayClients}>
-                  <defs>
-                    <linearGradient id="cliGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#10b981" stopOpacity={0.45} />
-                      <stop offset="100%" stopColor="#10b981" stopOpacity={0.05} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e7e5e4" vertical={false} />
-                  <XAxis dataKey="date" tick={{ fontSize: 11 }} tickFormatter={(v) => v.slice(5)} />
-                  <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
-                  <Tooltip labelStyle={{ fontSize: 12 }} />
-                  <Area type="monotone" dataKey="count" stroke="#059669" strokeWidth={2} fill="url(#cliGradient)" name="Clients" />
-                </AreaChart>
-              </ResponsiveContainer>
-            )}
+            {data && <ClientsPerDayChart data={data.perDayClients} />}
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="pb-3"><CardTitle className="flex items-center gap-2 text-base"><BarChart3 className="h-4 w-4 text-brand-foreground" /> CA par catégorie</CardTitle></CardHeader>
           <CardContent className="h-64">
-            {data && (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={data.revenueByCategory} layout="vertical" margin={{ left: 30 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e7e5e4" horizontal={false} />
-                  <XAxis type="number" tick={{ fontSize: 11 }} tickFormatter={(v) => `${Math.round(v / 1000)}k`} />
-                  <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} width={110} />
-                  <Tooltip formatter={(v: number) => formatXOF(v)} labelStyle={{ fontSize: 12 }} />
-                  <Bar dataKey="revenue" fill="#f59e0b" radius={[0, 6, 6, 0]} name="CA" />
-                </BarChart>
-              </ResponsiveContainer>
-            )}
+            {data && <RevenueByCategoryChart data={data.revenueByCategory} />}
           </CardContent>
         </Card>
 

@@ -162,6 +162,59 @@
 }
 
 /* ============================================================
+   ANIMATIONS D'APPARITION (CSS pur — remplace framer-motion)
+   Keyframes partagées par le storefront (Reveal, tiroir panier,
+   galerie produit, pages panier / remerciement, login admin).
+   Sous prefers-reduced-motion, le bloc global ci-dessus ramène
+   toutes les durées à 0.01ms : contenu visible instantanément.
+   ============================================================ */
+
+/* Reveal (sections de l'accueil) : caché avant intersection,
+   révélé par la classe .reveal-visible posée par IntersectionObserver. */
+.reveal-motion {
+  opacity: 0;
+  translate: 0 var(--reveal-y, 8px); /* y par défaut = 8px, identique à l'ancien prop framer */
+  transition:
+    opacity 400ms ease-out,
+    translate 400ms ease-out; /* calque transition={{ duration: 0.4, ease: "easeOut" }} */
+}
+.reveal-motion.reveal-visible {
+  opacity: 1;
+  translate: 0 0;
+}
+/* prefers-reduced-motion : pas d'animation, contenu visible immédiatement */
+@media (prefers-reduced-motion: reduce) {
+  .reveal-motion {
+    opacity: 1 !important;
+    translate: none !important;
+    transition: none !important;
+  }
+}
+
+/* Tiroir panier : entrée glissée depuis la droite + fond en fondu */
+@keyframes slide-in-right {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Apparition douce (pages remerciement, login admin) : fondu + montée */
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Coche de succès (page remerciement) : pop avec léger rebond,
+   calque l'ancien ressort framer (scale 0 + rotation -20° → 1 + 0°) */
+@keyframes pop-in {
+  from { opacity: 0; transform: scale(0) rotate(-20deg); }
+  to { opacity: 1; transform: scale(1) rotate(0deg); }
+}
+
+/* ============================================================
    ÉDITEUR VISUEL « ÉDITION DIRECTE » (canvas inline)
    Overlays façon Elementor : survols, zones cliquables, drop
    d'images, chips de listes — scopés à .tm-inline-root.

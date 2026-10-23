@@ -45,17 +45,23 @@ export async function GET() {
       120_000,
     )
 
-    const withConversion = await Promise.all(
-      carts.map(async (cart) => {
-        const convertedOrder = cart.convertedOrderId
-          ? await db.order.findUnique({
-              where: { id: cart.convertedOrderId },
-              select: { id: true, orderNumber: true, total: true },
-            })
-          : null
-        return { cart, convertedOrder }
-      }),
-    )
+    // Commandes de conversion : 1 lecture globale (anti-N+1) au lieu d'une
+    // par panier, puis correspondance par Map — mêmes données retournées.
+    const convertedOrderIds = carts
+      .map((c) => c.convertedOrderId)
+      .filter((id): id is string => id !== null)
+    const convertedOrders = convertedOrderIds.length
+      ? await db.order.findMany({
+          where: { id: { in: convertedOrderIds } },
+          select: { id: true, orderNumber: true, total: true },
+        })
+      : []
+    const orderById = new Map(convertedOrders.map((o) => [o.id, o]))
+
+    const withConversion = carts.map((cart) => ({
+      cart,
+      convertedOrder: cart.convertedOrderId ? (orderById.get(cart.convertedOrderId) ?? null) : null,
+    }))
 
     const rows = withConversion.map(({ cart, convertedOrder }) => {
       const items = cart.items.map((i) => {

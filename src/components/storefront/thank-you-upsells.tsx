@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
-import { motion } from "framer-motion"
 import { Gift, Loader2, PartyPopper, Sparkles } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
@@ -90,12 +89,11 @@ export function ThankYouUpsells({ orderId, token }: { orderId: string; token?: s
   }
 
   return (
-    <motion.section
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
+    // CSS pur : apparition fondu + montée (keyframe slide-up de globals.css),
+    // calque l'ancien motion.section (opacity 0, y 10 → 0.3 s).
+    <section
       aria-label="Offres exclusives réservées à votre commande"
-      className="overflow-hidden rounded-xl border border-brand/60 bg-gradient-to-b from-brand-soft/80 to-card shadow-sm"
+      className="overflow-hidden rounded-xl border border-brand/60 bg-gradient-to-b from-brand-soft/80 to-card shadow-sm animate-[slide-up_0.3s_ease-out]"
     >
       <div className="flex flex-wrap items-center gap-2 border-b border-brand/30 px-5 py-4">
         <span className="flex h-8 w-8 items-center justify-center rounded-full bg-brand text-brand-foreground">
@@ -162,6 +160,6 @@ export function ThankYouUpsells({ orderId, token }: { orderId: string; token?: s
           Non merci, je passe
         </button>
       </div>
-    </motion.section>
+    </section>
   )
 }

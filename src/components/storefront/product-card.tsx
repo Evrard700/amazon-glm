@@ -2,7 +2,6 @@
 
 import Link from "next/link"
 import Image from "next/image"
-import { motion } from "framer-motion"
 import { Download, Package } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
@@ -42,11 +41,10 @@ export function ProductCard({
   const image = product.images?.[0]
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 8 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-20px" }}
-      transition={{ duration: 0.25 }}
+    // CSS pur : le survol (élévation + ombre) est déjà géré par les classes
+    // transition-all/hover ci-dessous — l'ancien whileInView framer est retiré
+    // (les grilles restent révélées par le Reveal de leur section).
+    <div
       className={cn(
         "group relative flex h-full flex-col overflow-hidden rounded-xl border bg-card shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg",
         className,
@@ -112,6 +110,6 @@ export function ProductCard({
           {outOfStock ? "Indisponible" : "Ajouter au panier"}
         </button>
       </div>
-    </motion.div>
+    </div>
   )
 }

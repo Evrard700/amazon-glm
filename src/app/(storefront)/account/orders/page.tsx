@@ -39,7 +39,9 @@ export default async function AccountOrdersPage({
       ...(filter === "livrees" ? { orderStatus: "DELIVERED" } : {}),
     },
     orderBy: { createdAt: "desc" },
-    include: { items: true },
+    // Compteur en sous-requête (anti-overfetching) : plus de chargement
+    // complet des lignes juste pour dénombrer les articles
+    include: { _count: { select: { items: true } } },
   })
 
   return (
@@ -93,7 +95,7 @@ export default async function AccountOrdersPage({
       ) : (
         <ul className="space-y-3">
           {orders.map((order) => {
-            const itemCount = order.items.reduce((s, i) => s + i.quantity, 0)
+            const itemCount = order._count.items
             return (
               <li key={order.id}>
                 <Link href={`/account/orders/${order.orderNumber}`} className="block rounded-xl transition hover:opacity-95">

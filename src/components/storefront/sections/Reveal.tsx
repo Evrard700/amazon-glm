@@ -1,11 +1,14 @@
 "use client"
 
-import type { ReactNode } from "react"
-import { motion, useReducedMotion } from "framer-motion"
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react"
+import { cn } from "@/lib/utils"
 
 /**
- * Wrapper d'animation d'apparition — discret, une seule fois,
- * désactivé si l'utilisateur préfère réduire les animations.
+ * Wrapper d'apparition — CSS pur (IntersectionObserver + transition),
+ * une seule fois, désactivé si l'utilisateur préfère réduire les animations
+ * (règle .reveal-motion dans globals.css : visible immédiatement).
+ * Remplace framer-motion whileInView : mêmes valeurs (opacity 0→1,
+ * translateY y→0, 400 ms ease-out, déclenchement unique au scroll).
  */
 export function Reveal({
   children,
@@ -18,17 +21,39 @@ export function Reveal({
   y?: number
   className?: string
 }) {
-  const reduce = useReducedMotion()
-  if (reduce) return <div className={className}>{children}</div>
+  const ref = useRef<HTMLDivElement>(null)
+  const [visible, setVisible] = useState(false)
+
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    // Équivalent de viewport={{ once: true }} : on observe puis on se débranche
+    // dès la première intersection (marge basse proche de l'ancien "-40px").
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setVisible(true)
+          observer.disconnect()
+        }
+      },
+      { rootMargin: "0px 0px -10% 0px" },
+    )
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [])
+
   return (
-    <motion.div
-      initial={{ opacity: 0, y }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-40px" }}
-      transition={{ duration: 0.4, delay, ease: "easeOut" }}
-      className={className}
+    <div
+      ref={ref}
+      className={cn("reveal-motion", visible && "reveal-visible", className)}
+      style={
+        {
+          "--reveal-y": `${y}px`,
+          transitionDelay: delay > 0 ? `${delay}s` : undefined,
+        } as CSSProperties
+      }
     >
       {children}
-    </motion.div>
+    </div>
   )
 }

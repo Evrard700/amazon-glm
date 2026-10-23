@@ -9,7 +9,7 @@ import { Logo } from "@/components/storefront/logo"
 
 // Toute la boutique est rendue dynamiquement : l'en-tête et le pied de page
 // dépendent de la base (catégories, réglages). Rien ne doit être figé au build,
-// sinon la construction exige DATABASE_URL et échoue (ex. Vercel sans .env).
+// sinon la construction exige DATABASE_URL et échoue (hébergeur sans .env).
 export const dynamic = "force-dynamic"
 
 async function getStoreData() {

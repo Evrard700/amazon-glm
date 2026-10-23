@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
-import { motion } from "framer-motion"
 import {
   ArrowRight,
   Gift,
@@ -205,8 +204,7 @@ export function CartPageView({ freeShippingThreshold }: { freeShippingThreshold:
           <Card>
             <CardContent className="divide-y p-0">
               {store.lines.map((line) => (
-                <motion.div
-                  layout
+                <div
                   key={line.itemId}
                   className={cn("flex gap-3 p-4 sm:gap-4", line.pending && "animate-pulse opacity-70")}
                 >
@@ -277,7 +275,7 @@ export function CartPageView({ freeShippingThreshold }: { freeShippingThreshold:
                       </p>
                     )}
                   </div>
-                </motion.div>
+                </div>
               ))}
 
               {store.extraLines.map((extra, i) => (
