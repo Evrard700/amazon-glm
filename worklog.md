@@ -623,3 +623,23 @@ Stage Summary:
 - Sécurité production renforcée au passage : comptes démo désactivés (c'était une faille réelle, indépendante de GitHub).
 - Procédure donnée à l'utilisateur : création PAT fine-grained (Contents rw, expiration courte) → je crée le repo via l'API + push → il RÉVOQUE le jeton immédiatement.
 - RÈGLE : ne JAMAIS écrire de secret en clair dans un fichier suivi ; toujours .env (gitignoré) ou variables d'environnement.
+
+---
+Task ID: 17
+Agent: Z.ai Code (orchestrateur)
+Task: Pousser le code sur GitHub — réception du PAT utilisateur, vérifications finales, tentative de push
+
+Work Log:
+- PAT reçu (github_pat_…) → authentification API OK : login = Evrard700 ; remote déjà configuré vers https://github.com/Evrard700/amazon-glm.git (repo public VIDE créé par l'utilisateur).
+- Image collée par l'utilisateur (upload/pasted_image_…png, auto-committée par le sandbox) analysée via VLM CLI : capture de la page du repo vide amazon-glm — URL/HTTPS identiques au remote, AUCUN secret dans l'image.
+- Décision : upload/ (artefacts sandbox) exclu du dépôt — ajouté à .gitignore + git rm --cached ; mention d'anciens mots de passe démo caviardée dans worklog l.614.
+- Scan secrets FINAL sur les 360 fichiers suivis : 0 secret (seule ligne 614 worklog = description historique, caviardée). Commit cdc6aaa « chore: exclure artefacts sandbox ».
+- PUSH ATTEMPT : git push origin main (credential helper temporaire, jeton non persisté dans .git/config) → 403 « Permission to Evrard700/amazon-glm.git denied ».
+- DIAGNOSTIC précis : GET /user/repos → le token VOIT amazon-glm (accès repo OK) ; PUT /contents/.perm-test → 403 → le PAT manque la permission « Contents: Read and write » (Metadata seule). Fichier test NON créé côté GitHub (403), repo toujours vierge.
+- BLOCKER remonté à l'utilisateur avec procédure exacte : éditer le token EXISTANT (github.com → Settings → Developer settings → Fine-grained tokens → Permissions → Repository permissions → Contents → « Read and write » → Save) — la valeur du jeton reste IDENTIQUE, pas besoin de re-coller. Puis je relance le push.
+- Le jeton transmis en clair dans le chat doit être RÉVOQUÉ après le push réussi (il a voyagé en texte).
+
+Stage Summary:
+- Repo local : 3 commits propres (08a6c49 + e8d824a + cdc6aaa), 359 fichiers suivis, 0 secret, ~4,6 Mo.
+- Authentification GitHub : OK ; accès repo : OK ; il ne manque QUE « Contents: Read and write » sur le PAT pour que le push passe.
+- En attente : action utilisateur (édition permission token) → relance push → vérification → révocation du jeton.
