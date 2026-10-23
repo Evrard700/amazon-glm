@@ -73,6 +73,70 @@ const empty: CartClientState = {
   savings: 0,
 }
 
+// ============================================================================
+// PERSISTANCE LOCALE (SWR côté client) — PANIER INSTANTANÉ
+// L'état panier est sauvegardé dans localStorage à chaque changement, puis
+// ré-appliqué IMMÉDIATEMENT au chargement suivant : badge, tiroir et page
+// panier affichent le bon état sans attendre le moindre aller-retour serveur.
+// La revalidation /api/cart (vérité serveur) suit en tâche de fond — elle
+// corrige l'instantané s'il a vieilli (autre appareil, déconnexion…).
+// ============================================================================
+const SNAPSHOT_KEY = "teranga_cart_v1"
+
+interface CartSnapshot extends CartClientState {
+  savedAt: number
+}
+
+function readSnapshot(): CartSnapshot | null {
+  if (typeof window === "undefined") return null
+  try {
+    const raw = window.localStorage.getItem(SNAPSHOT_KEY)
+    if (!raw) return null
+    const parsed = JSON.parse(raw) as CartSnapshot | null
+    if (!parsed || typeof parsed.itemCount !== "number" || !Array.isArray(parsed.lines)) return null
+    return parsed
+  } catch {
+    return null
+  }
+}
+
+function writeSnapshot(state: CartClientState) {
+  if (typeof window === "undefined") return
+  // Une ligne « pending » (ajout optimiste en vol) est transitoire : on ne
+  // fige pas cet état intermédiaire, la prochaine mise à jour stable écrira.
+  if (state.lines.some((l) => l.pending)) return
+  const snapshot: CartSnapshot = { ...state, savedAt: Date.now() }
+  try {
+    window.localStorage.setItem(SNAPSHOT_KEY, JSON.stringify(snapshot))
+  } catch {
+    /* quota localStorage dépassé : silencieux */
+  }
+}
+
+/** true si l'instantané local est suffisamment récent pour ignorer la 1re revalidation. */
+let hydrationDone = false
+
+/** Applique l'instantané local s'il existe — UNE seule fois par chargement d'onglet. */
+export function hydrateCartFromLocal(): boolean {
+  if (hydrationDone || typeof window === "undefined") return false
+  hydrationDone = true
+  const snap = readSnapshot()
+  if (!snap) return false
+  const { savedAt: _savedAt, ...cart } = snap
+  useCartStore.setState(cart)
+  return true
+}
+
+/** Efface l'instantané local (déconnexion : le panier repart proprement à zéro). */
+export function clearCartSnapshot() {
+  if (typeof window === "undefined") return
+  try {
+    window.localStorage.removeItem(SNAPSHOT_KEY)
+  } catch {
+    /* noop */
+  }
+}
+
 /** Instantané de l'état panier (pour annuler proprement un optimisme en échec). */
 function snapshotOf(s: CartStore): CartClientState {
   return {
@@ -250,3 +314,13 @@ export const useCartStore = create<CartStore>((set, get) => ({
     }
   },
 }))
+
+// Persistance automatique : chaque changement d'état re-déclenche une
+// sauvegarde (debounce 300 ms pour grouper les salves d'actions).
+if (typeof window !== "undefined") {
+  let writeTimer: ReturnType<typeof setTimeout> | null = null
+  useCartStore.subscribe((state) => {
+    if (writeTimer) clearTimeout(writeTimer)
+    writeTimer = setTimeout(() => writeSnapshot(snapshotOf(state)), 300)
+  })
+}

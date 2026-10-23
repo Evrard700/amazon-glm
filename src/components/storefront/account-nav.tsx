@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation"
 import { Download, Gift, LayoutDashboard, LogOut, Loader2, Package, TicketPercent, User, Wallet } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { formatXOF } from "@/lib/money"
+import { clearCartSnapshot } from "@/lib/cart-store"
 import { cn } from "@/lib/utils"
 
 const NAV_ITEMS = [
@@ -23,6 +24,7 @@ export function LogoutButton({ className, variant = "outline" }: { className?: s
   async function logout() {
     setLoggingOut(true)
     try {
+      clearCartSnapshot()
       await fetch("/api/auth/logout", { method: "POST" })
       window.location.href = "/"
     } catch {

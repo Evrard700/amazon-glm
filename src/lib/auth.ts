@@ -8,7 +8,7 @@ import { cached } from "@/lib/cache"
 import type { User } from "@prisma/client"
 
 export const SESSION_COOKIE = "tm_session"
-const SESSION_TTL_SECONDS = 60 * 60 * 24 * 7 // 7 jours
+const SESSION_TTL_SECONDS = 60 * 60 * 24 * 30 // 30 jours — l'utilisateur reste connecté et retrouve son compte sur tous ses appareils
 
 function getSecret(): Uint8Array {
   const secret = process.env.SESSION_SECRET

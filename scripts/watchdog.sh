@@ -12,7 +12,7 @@
 #      que la boutique reste INSTANTANÉE.
 # Boucle passive (sleep), empreinte mémoire négligeable.
 # ============================================================
-RSS_MAX_MB=2400        # recyclage préventif AVANT l'OOM noyau (~3 Go observé en session lourde)
+RSS_MAX_MB=2700        # recyclage préventif AVANT l'OOM noyau (~3 Go observé en session lourde)
 HEAP_MB=1300           # cap V8 pour next-server
 CHECK_INTERVAL=20      # secondes entre les vérifications
 PROJ=/home/z/my-project

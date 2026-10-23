@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useLayoutEffect, useState } from "react"
 import Link from "next/link"
 import { Menu, Search, ShoppingCart, User, LogIn, Package, TicketPercent, LogOut, LayoutDashboard } from "lucide-react"
 import {
@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet"
 import { ClientOnly } from "@/components/storefront/client-only"
-import { useCartStore } from "@/lib/cart-store"
+import { useCartStore, hydrateCartFromLocal, clearCartSnapshot } from "@/lib/cart-store"
 import { formatXOF } from "@/lib/money"
 import { cn } from "@/lib/utils"
 
@@ -64,6 +64,13 @@ export function MobileMenu({ categories }: { categories: { name: string; slug: s
 
 export function CartButton() {
   const { openDrawer, fetchCart, itemCount, subtotal, promotionDiscount, couponDiscount } = useCartStore()
+
+  // INSTANTANÉ : l'instantané local (localStorage) est appliqué AVANT le
+  // premier affichage → badge et montant corrects immédiatement, sans
+  // attendre /api/cart. La revalidation ci-dessous corrige ensuite en fond.
+  useLayoutEffect(() => {
+    hydrateCartFromLocal()
+  }, [])
 
   useEffect(() => {
     fetchCart()
@@ -154,6 +161,7 @@ export function AccountMenu({ user }: { user: HeaderUser | null }) {
         <DropdownMenuItem
           onClick={async () => {
             setLoading(true)
+            clearCartSnapshot()
             await fetch("/api/auth/logout", { method: "POST" })
             window.location.href = "/"
           }}
