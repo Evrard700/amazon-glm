@@ -60,5 +60,7 @@ server.log
 # Identifiants du warmup (locaux uniquement)
 /scripts/warmup.creds
 /scripts/warmup.token
+/scripts/rss-max.conf
 # Images collées dans le chat (artefacts sandbox, pas du code projet)
 /upload/
+/dev.log*

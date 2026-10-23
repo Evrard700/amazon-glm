@@ -12,7 +12,7 @@
 #      que la boutique reste INSTANTANÉE.
 # Boucle passive (sleep), empreinte mémoire négligeable.
 # ============================================================
-RSS_MAX_MB=2700        # recyclage préventif AVANT l'OOM noyau (~3 Go observé en session lourde)
+# Plafond dynamique : scripts/rss-max.conf (modifiable à chaud, 2700 par défaut)
 HEAP_MB=1300           # cap V8 pour next-server
 CHECK_INTERVAL=20      # secondes entre les vérifications
 PROJ=/home/z/my-project
@@ -53,9 +53,11 @@ start_server() {
   return 1
 }
 
-log "watchdog démarré (RSS max ${RSS_MAX_MB} Mo, heap ${HEAP_MB} Mo)"
+RSS_MAX_MB="$(cat /home/z/my-project/scripts/rss-max.conf 2>/dev/null || echo 2700)"
+log "watchdog démarré (RSS max ${RSS_MAX_MB} Mo, heap ${HEAP_MB} Mo — plafond modifiable à chaud via scripts/rss-max.conf)"
 
 while true; do
+  RSS_MAX_MB="$(cat /home/z/my-project/scripts/rss-max.conf 2>/dev/null || echo 2700)"
   # 1) serveur vivant ?
   if ! curl -s -o /dev/null --max-time 5 http://localhost:3000/ 2>/dev/null; then
     log "serveur inaccessible → relance"

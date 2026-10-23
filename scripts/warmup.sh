@@ -115,7 +115,7 @@ if [ -n "$AUTH_HEADER" ]; then
               "/admin/users" "/admin/roles" "/admin/activity-logs" \
               "/admin/marketing/coupons" "/admin/marketing/reviews" \
               "/admin/marketing/abandoned-carts" "/admin/marketing/promotions" \
-              "/admin/marketing/upsells" "/admin/marketing/referral-program" \
+              "/admin/marketing/upsells" "/admin/marketing/referrals" \
               "/admin/marketing/full-refund" "/admin/marketing/campaigns" \
               "/api/admin/users/me" "/api/admin/dashboard/stats?days=7" \
               "/api/admin/dashboard/stats?days=30" "/api/admin/orders" \
@@ -141,3 +141,20 @@ else
 fi
 
 log_line "Warmup TERMINÉ (PID $$)"
+
+# 3) PASSE DE SANTÉ — chaque route chauffée doit répondre vite (< 15 s).
+#    Une route muette = cache Turbopack possiblement corrompu (déjà vu pour
+#    /catalogue après un recyclage en pleine compilation) → journalisation
+#    explicite pour intervention : rm -rf .next/dev puis relancer le warmup.
+SUSPECTS=0
+for path in "/" "/catalogue" "/cart" "/login" "/register" "/checkout" \
+            "/products/tilo-teste-08" "/categories/electronique" ; do
+  CODE="$(curl -s -o /dev/null -w "%{http_code}" --max-time 15 "$BASE$path" 2>/dev/null)"
+  if [ "$CODE" = "000" ]; then
+    log_line "⚠️  SUSPECT : $path ne répond pas — cache dev possiblement corrompu (rm -rf .next/dev + relancer)"
+    SUSPECTS=$((SUSPECTS+1))
+  else
+    log_line "santé $path → $CODE"
+  fi
+done
+[ "$SUSPECTS" -eq 0 ] && log_line "✓ Passe de santé : toutes les routes storefront répondent"
