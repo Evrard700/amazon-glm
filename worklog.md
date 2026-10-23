@@ -643,3 +643,21 @@ Stage Summary:
 - Repo local : 3 commits propres (08a6c49 + e8d824a + cdc6aaa), 359 fichiers suivis, 0 secret, ~4,6 Mo.
 - Authentification GitHub : OK ; accès repo : OK ; il ne manque QUE « Contents: Read and write » sur le PAT pour que le push passe.
 - En attente : action utilisateur (édition permission token) → relance push → vérification → révocation du jeton.
+
+---
+Task ID: 17 (suite et fin — PUSH RÉUSSI)
+Agent: Z.ai Code (orchestrateur)
+Task: Relance du push après édition de la permission Contents (rw) par l'utilisateur
+
+Work Log:
+- L'utilisateur a édité son jeton existant (Contents → Read and write) — accompagné par capture d'écran interprétée (VLM) : page Edit fine-grained token, repository access = All repositories, 0 permission au départ, pop-up « Select repository permissions » → instructions données pas à pas.
+- PUSH N°2 : git push -u origin main → SUCCÈS « * [new branch] main -> main ».
+- Vérification API : 5 commits présents sur origin/main, default_branch=main, language=TypeScript, pushed_at=2026-10-23T00:38:40Z.
+- Vérification navigateur (agent-browser) : https://github.com/Evrard700/amazon-glm rendu correct — 5 commits visibles, fichier/dossiers (package.json, prisma/, …) listés.
+- Note cosmétique (sans risque) : le commit auto b9c9e15 contient dans l'HISTOIRE la capture du dépôt vide (108 Ko, VLM-vérifiée SANS secret) ; retirée de l'arbre courant via cdc6aaa. Pas de rewrite/force-push : aucun gain de sécurité, risque inutile.
+- Jeton toujours actif → RAPPEL utilisateur : RÉVOQUER immédiatement (github.com → Settings → Developer settings → Fine-grained tokens → Delete). Le jeton a voyagé en clair dans le chat.
+- Prochaine étape utilisateur : import Vercel du repo + variables .env.example → domaine → clés Wave/OM dans Admin→Paiements.
+
+Stage Summary:
+- ✅ CODE EN LIGNE SUR GITHUB : https://github.com/Evrard700/amazon-glm — 5 commits, 359 fichiers, 0 secret, branche main.
+- Actions restantes (utilisateur uniquement) : révoquer le PAT ; import Vercel + env vars ; domaine ; clés paiement.
