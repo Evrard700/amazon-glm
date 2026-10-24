@@ -1,4 +1,5 @@
 import { db } from "@/lib/db"
+import { isSupabaseAuthConfigured } from "@/lib/supabase-auth"
 
 export const dynamic = "force-dynamic"
 
@@ -34,6 +35,10 @@ export async function GET() {
   body["NEXT_PUBLIC_SITE_URL (référencement)"] = process.env.NEXT_PUBLIC_SITE_URL
     ? "✅ présente"
     : "⚠️ absente — optionnelle mais recommandée"
+
+  body["Supabase Auth (synchronisation des comptes)"] = isSupabaseAuthConfigured()
+    ? "✅ ACTIVE — chaque inscription est enregistrée automatiquement dans Supabase → Authentication"
+    : "⚠️ en attente — ajoutez NEXT_PUBLIC_SUPABASE_URL et SUPABASE_SERVICE_ROLE_KEY (Supabase → Settings → API) pour activer la sauvegarde des comptes en ligne"
 
   try {
     await db.$queryRaw`SELECT 1`

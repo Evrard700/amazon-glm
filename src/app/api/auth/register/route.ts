@@ -5,6 +5,7 @@ import { hashPassword, createSession, generateReferralCode } from "@/lib/auth"
 import { attachReferrer } from "@/lib/services/referrals"
 import { logActivity } from "@/lib/activity"
 import { enforceRateLimit } from "@/lib/rate-limit"
+import { syncUserToSupabaseAuth } from "@/lib/supabase-auth"
 
 const schema = z.object({
   name: z.string().min(2, "nom trop court"),
@@ -45,18 +46,34 @@ export async function POST(request: Request) {
       referralResult = await attachReferrer(user.id, body.referralCode, "SIGNUP")
     }
 
+    // SUPABASE AUTH — le compte est aussi enregistré dans Supabase →
+    // Authentication (compte miroir en ligne, retrouvable sur tout appareil).
+    // Jamais bloquant : si le service est indisponible, l'inscription réussit
+    // quand même et le compte sera rattrapé à la première connexion.
+    const supabaseSync = await Promise.race([
+      syncUserToSupabaseAuth(user, body.password),
+      new Promise<null>((resolve) => setTimeout(() => resolve(null), 4000)),
+    ])
+
     await createSession(user)
     await logActivity({
       actor: { id: user.id, name: user.name, role: user.role },
       action: "auth.register",
       entityType: "user",
       entityId: user.id,
-      details: { referralApplied: referralResult.ok },
+      details: {
+        referralApplied: referralResult.ok,
+        supabaseAuth: supabaseSync?.status ?? "en_attente",
+      },
     })
 
     return ok({
       user: { id: user.id, name: user.name, email: user.email, role: user.role },
       referral: referralResult.ok ? "ok" : (referralResult as { reason?: string }).reason ?? "non appliqué",
+      supabaseAuth:
+        supabaseSync?.status === "synchronise"
+          ? "compte enregistré dans Supabase Authentication"
+          : "compte créé — synchronisation Supabase en attente (clé service_role absente)",
     })
   })
 }

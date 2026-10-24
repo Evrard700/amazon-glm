@@ -28,6 +28,11 @@ model User {
   isActive     Boolean @default(true)
   avatarUrl    String?
 
+  // Supabase Auth — identifiant du compte miroir dans Supabase → Authentication
+  // (null = pas encore synchronisé ; rempli automatiquement à l'inscription
+  // ou à la première connexion qui suit la mise en place de la synchronisation)
+  supabaseAuthId String? @unique
+
   // CRM
   address          String?
   city             String?

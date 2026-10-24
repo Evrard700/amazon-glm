@@ -4,6 +4,7 @@ import { ok, handle, parseBody, ApiError } from "@/lib/api"
 import { verifyPassword, createSession } from "@/lib/auth"
 import { logActivity } from "@/lib/activity"
 import { enforceRateLimit, enforceRateLimitKey } from "@/lib/rate-limit"
+import { syncUserToSupabaseAuth, isSupabaseAuthConfigured } from "@/lib/supabase-auth"
 
 const schema = z.object({
   email: z.string().email("adresse email invalide"),
@@ -29,6 +30,15 @@ export async function POST(request: Request) {
     // Un client ordinaire ne peut PAS se connecter côté admin
     if (body.staffLogin && !["OWNER", "ADMIN", "MANAGER", "MARKETING", "STAFF"].includes(user.role)) {
       throw new ApiError("Ce compte n'a pas accès à l'administration.", 403)
+    }
+
+    // SUPABASE AUTH — rattrapage silencieux en TÂCHE DE FOND : les anciens
+    // comptes (créés avant la mise en place de la synchronisation, comme le
+    // compte propriétaire) sont enregistrés/mis à jour dans Supabase →
+    // Authentication avec le mot de passe valide qui vient d'être saisi.
+    // Aucun await → la connexion reste INSTANTANÉE, quoi qu'il arrive.
+    if (isSupabaseAuthConfigured()) {
+      void syncUserToSupabaseAuth(user, body.password, { updatePassword: true }).catch(() => {})
     }
 
     await createSession(user)
