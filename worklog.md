@@ -888,3 +888,28 @@ Stage Summary:
 - Boutique RÉPARÉE : la cause était exclusivement environnementale (env sandbox périmé), aucune régression de code — le code GitHub était déjà complet.
 - Supabase Auth implémentée de bout en bout : chaque inscription crée désormais un compte dans Supabase → Authentication ; les anciens comptes (owen inclus) sont rattrapés automatiquement à leur première connexion, ou en masse via bun scripts/sync-supabase-auth.ts dès que SUPABASE_SERVICE_ROLE_KEY est collée dans .env ; /api/health affiche l'état de la synchronisation.
 - Pour finaliser 100 % : l'utilisateur colle la clé « service_role » (Supabase → Settings → API) → la synchronisation s'active sans autre action, puis révoque le PAT GitHub.
+
+---
+Task ID: 26
+Agent: Z.ai Code (orchestrateur)
+Task: « La boutique ne s'affiche pas » (nouveau redémarrage du sandbox) + activation Réelle de la synchronisation Supabase Auth avec les nouvelles clés
+
+Work Log:
+- NOUVEAU REDÉMARRAGE DU SANDBOX (4 jours plus tard) : .env réécrit par une session intermédiaire avec les CLÉS SUPABASE NOUVELLE GÉNÉRATION (SUPABASE_URL …/rest/v1/, SUPABASE_PUBLISHABLE_KEY sb_publishable_…, SUPABASE_SECRET_KEY sb_secret_…) + SESSION_SECRET changé ; serveur relancé nu par le sandbox → a hérité du DATABASE_URL SQLite injecté → 500 « URL must start with postgresql:// » identique à la Task 25. Watchdog absent (/tmp vidé).
+- RÉPARATION : serveur tué puis relancé via le watchdog (lit .env disque + force les variables) → accueil 200 en 0,13 s.
+- ADAPTATION CLÉS : src/lib/supabase-auth.ts accepte désormais les DEUX conventions — URL : NEXT_PUBLIC_SUPABASE_URL ou SUPABASE_URL (suffixe /rest/v1/ retiré automatiquement) ; clé serveur : SUPABASE_SECRET_KEY (sb_secret_ moderne) ou SUPABASE_SERVICE_ROLE_KEY (legacy) ; message /api/health mis à jour. VERDICT TEST RÉEL : la clé sb_secret_ fonctionne parfaitement avec auth.admin (supabase-js 2.118).
+- PREUVE END-TO-END : inscription d'essai → réponse « compte enregistré dans Supabase Authentication » → vérifié par listUsers : le compte figure bien dans Supabase → Authentication (email confirmé) → compte d'essai supprimé des DEUX systèmes (Prisma + Auth), base propre.
+- RATTRAPAGE RÉEL : bun scripts/sync-supabase-auth.ts (connection_limit=1 — première tentative a heurté EMAXCONNSESSION pool_size 15 du pooler avec le serveur en parallèle) → 1/1 compte : le COMPTE PROPRIÉTAIRE evrardguehisea731@gmail.com est MAINTENANT dans Supabase → Authentication (rôle OWNER, nom complet, confirmé). Les 3 comptes de démonstration désactivés sont volontairement ignorés (isActive=false). Le mot de passe Supabase du propriétaire (aléatoire lors du rattrapage) s'alignera automatiquement sur son VRAI mot de passe à sa prochaine connexion au site (updatePassword en tâche de fond).
+- RÉGRESSIONS DÉCOUVERTES ET CORRIGÉES (travail non committé d'une session intermédiaire, interrompue) :
+  • /robots.txt → 500 « conflicting public file and page file » : un robots.txt STATIQUE erroné (public/) conflittait avec le robots.ts dynamique → supprimé → robots.txt 200 avec les bonnes règles (Allow / + Disallow /admin /api/ /account/ /checkout) ; sitemap.xml 200.
+  • ROUTES D'UPLOAD ADMIN SUPPRIMÉES PAR ERREUR (api/admin/upload/image + digital) alors que upload-client.ts les appelle → uploads admin 100 % cassés → restaurées depuis git (HEAD) → POST → 401 sur les DEUX (routes vivantes, auth requise — comportement normal).
+  • Bruit de permissions (mode 644→755) sur 9 fichiers restauré ; .zscripts/dev.pid restauré.
+- .ENV : note SEO ajoutée (NEXT_PUBLIC_SITE_URL à décommenter avec le vrai domaine à la mise en ligne Hostinger).
+- LINT 0 erreur. COMMIT c95e046 POUSSÉ sur GitHub (5498bb8..c95e046).
+- E2E NAVIGATEUR FINAL : accueil 200 (56 éléments interactifs, 0 erreur console) ; navigation catalogue OK ; ajout au panier OK (badge « 1 article ») ; /api/health navigateur : « Supabase Auth ✅ ACTIVE » + « connexion base RÉUSSIE ».
+
+Stage Summary:
+- Boutique réaffichée (cause environnementale récurrente : env sandbox périmé au redémarrage — le watchdog reste LA voie de lancement fiable).
+- Supabase Auth 100 % OPÉRATIONNEL avec les clés réelles : chaque inscription → compte créé dans Supabase → Authentication (prouvé) ; compte propriétaire rattrapé et présent dans le dashboard ; anciens comptes rattrapés automatiquement à leur première connexion ; rattrapage en masse disponible.
+- Régressions intermédiaires (robots 500, uploads admin cassés) corrigées et protégées par commit.
+- Reste utilisateur : révocation du PAT GitHub (toujours actif) ; NEXT_PUBLIC_SITE_URL au déploiement Hostinger ; clés Wave/OM dans Admin → Paiements.
