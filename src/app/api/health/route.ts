@@ -38,7 +38,7 @@ export async function GET() {
 
   body["Supabase Auth (synchronisation des comptes)"] = isSupabaseAuthConfigured()
     ? "✅ ACTIVE — chaque inscription est enregistrée automatiquement dans Supabase → Authentication"
-    : "⚠️ en attente — ajoutez NEXT_PUBLIC_SUPABASE_URL et SUPABASE_SERVICE_ROLE_KEY (Supabase → Settings → API) pour activer la sauvegarde des comptes en ligne"
+    : "⚠️ en attente — ajoutez SUPABASE_URL et SUPABASE_SECRET_KEY (Supabase → Settings → API) pour activer la sauvegarde des comptes en ligne"
 
   try {
     await db.$queryRaw`SELECT 1`

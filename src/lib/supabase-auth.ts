@@ -20,15 +20,24 @@ import type { User } from "@prisma/client"
 // ignorée — la boutique fonctionne normalement sans elle.
 // ============================================================
 
-/** URL du projet Supabase, ex. https://kwaebthujnkvvbdvpimz.supabase.co */
+/**
+ * URL racine du projet Supabase, ex. https://kwaebthujnkvvbdvpimz.supabase.co
+ * Accepte les deux conventions : NEXT_PUBLIC_SUPABASE_URL (racine) ou
+ * SUPABASE_URL (endpoint REST « …/rest/v1/ » — suffixe retiré automatiquement).
+ */
 function supabaseUrl(): string | null {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/+$/, "")
-  return url && /^https:\/\/.+\.supabase\.co$/.test(url) ? url : null
+  const raw = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || ""
+  const url = raw.replace(/\/+$/, "").replace(/\/rest\/v1$/, "")
+  return /^https:\/\/.+\.supabase\.co$/.test(url) ? url : null
 }
 
-/** Clé service_role (secrète, serveur uniquement) — absente → mode hors-ligne. */
+/**
+ * Clé secrète SERVEUR — jamais dans le code client.
+ * Accepte la clé moderne « sb_secret_… » (SUPABASE_SECRET_KEY) ou la clé
+ * legacy « service_role » (SUPABASE_SERVICE_ROLE_KEY). Absente → mode hors-ligne.
+ */
 function serviceKey(): string | null {
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim()
+  const key = (process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || "").trim()
   // Les valeurs placeholder (ex. « À_COLLER_ICI ») ne comptent pas comme configurées
   if (!key || key.length < 40 || /COLLER|xxx|placeholder/i.test(key)) return null
   return key
